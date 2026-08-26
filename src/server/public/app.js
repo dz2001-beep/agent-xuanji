@@ -138,6 +138,7 @@ function bindEvents() {
   // 目录弹窗
   els.cwdPath.addEventListener('click', () => void openDirModal());
   $('cwd-open').addEventListener('click', () => void openDirModal());
+  els.cwdPath.title = '点击选择工作区';
   $('dir-close').addEventListener('click', closeDirModal);
   $('dir-cancel').addEventListener('click', closeDirModal);
   els.dirConfirm.addEventListener('click', () => void confirmDir());
@@ -529,7 +530,7 @@ async function confirmDir() {
     els.cwdPath.textContent = state.cwd;
     els.cwdPath.title = state.cwd;
     closeDirModal();
-    showBanner(`📁 工作目录已切换：${state.cwd}`);
+    showBanner(`📁 工作区已切换：${state.cwd}（生成的文件都在这里）`);
   } catch (err) {
     showDirError(err.message);
   }

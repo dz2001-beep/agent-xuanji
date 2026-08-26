@@ -283,7 +283,7 @@ program
       console.log('  │   harness-kit 工作台已启动                │');
       console.log('  ╰──────────────────────────────────────────╯');
       console.log(`  浏览器访问 : ${url}`);
-      console.log(`  工作目录   : ${server.session.cwd}`);
+      console.log(`  工作区     : ${server.session.cwd}（agent 生成内容都在这里，与产品代码隔离）`);
       console.log(`  API Key    : ${keyLabel}`);
       console.log(`  provider   : ${harness.provider.name}`);
       console.log(`  model      : ${harness.config.provider.model}`);
@@ -309,7 +309,91 @@ program
     },
   );
 
+/* ------------------------------ doctor ----------------------------- */
+
+program
+  .command('doctor')
+  .description('One-command self-check: API key, model connectivity, tool wire names')
+  .option('-c, --config <path>', `config file (default ${DEFAULT_CONFIG})`)
+  .option('-m, --model <model>', 'model to test (default: from config)')
+  .action(async (opts: { config?: string; model?: string }) => {
+    const { detectKey, testModelCall, auditToolWireNames, resolveBaseURL } = await import('../diagnose.js');
+    const { ToolRegistry } = await import('../tools/tool.js');
+    const { registerBuiltinTools } = await import('../tools/builtin.js');
+    const cfg = await resolveConfig(opts as CliOptions);
+    if (opts.model) cfg.provider.model = opts.model;
+
+    console.log('\n  ═══ harness-kit doctor ═══\n');
+
+    // [1] API key
+    const key = detectKey(cfg);
+    if (key.found) {
+      console.log(`  [1/4] API Key .......... ✅ ${key.source} (${key.masked})`);
+    } else {
+      console.log(`  [1/4] API Key .......... ❌ ${key.source}`);
+      console.log('        → 把 Key 放进项目根目录 .env（不会提交到 git）：');
+      console.log("          echo 'DEEPSEEK_API_KEY=sk-你的key' > .env");
+      console.log('        → 或 export DEEPSEEK_API_KEY=sk-你的key 后重试');
+      console.log('        → 或临时离线体验：加 --mock');
+    }
+
+    // [2] model connectivity
+    if (!key.found) {
+      console.log('  [2/4] 模型调用 .......... ⏭ 跳过（无 API Key）');
+    } else {
+      const baseURL = resolveBaseURL(cfg);
+      console.log(`  [2/4] 模型 ${cfg.provider.model} .... ⏳ 正在请求…`);
+      const res = await testModelCall({
+        model: cfg.provider.model,
+        apiKey: key.masked.length > 0 ? getKeyForTest(cfg) : '',
+        baseURL,
+        maxRetries: 0,
+      });
+      if (res.ok) {
+        console.log(`  [2/4] 模型 ${cfg.provider.model} .... ✅ 连通（${res.latencyMs}ms）`);
+      } else {
+        console.log(`  [2/4] 模型 ${cfg.provider.model} .... ❌ ${res.error}`);
+        console.log(explainModelError(res.error ?? ''));
+      }
+      if (baseURL) console.log(`        baseURL: ${baseURL}`);
+    }
+
+    // [3] tool wire names
+    const registry = new ToolRegistry();
+    registerBuiltinTools(registry, cfg.tools ?? []);
+    const audit = auditToolWireNames(registry.names());
+    if (audit.ok) {
+      console.log(`  [3/4] 工具 wire 名 ....... ✅ ${registry.names().length} 个工具名全部符合 API 约束`);
+    } else {
+      console.log(`  [3/4] 工具 wire 名 ....... ❌ 非法名: ${audit.invalid.join(', ')}`);
+    }
+
+    // [4] workspace
+    console.log(`  [4/4] 工作区 ............ ✅ ${process.cwd()}`);
+    console.log('\n  ═══════════════════════════════════\n');
+  });
+
 /* ------------------------------ helpers ---------------------------- */
+
+function getKeyForTest(cfg: HarnessConfig): string {
+  return (
+    cfg.provider.apiKey?.trim() ||
+    process.env.OPENAI_API_KEY?.trim() ||
+    process.env.DEEPSEEK_API_KEY?.trim() ||
+    ''
+  );
+}
+
+function explainModelError(err: string): string {
+  const e = err.toLowerCase();
+  if (e.includes('401') || e.includes('auth')) return '        → API Key 无效，检查是否复制完整（sk- 开头）。';
+  if (e.includes('402')) return '        → 账户余额不足，请到平台充值。';
+  if (e.includes('model')) return '        → 模型名无效：用 --model 换一个试试（如 deepseek-chat / deepseek-reasoner）。';
+  if (e.includes('fetch failed') || e.includes('econnrefused') || e.includes('network')) {
+    return '        → 网络无法到达 API，检查代理/网络连接。';
+  }
+  return '';
+}
 
 /** Timestamped log sink: console + optional file, used by the ui server. */
 function createUiLogger(logFile?: string): UiLogger {

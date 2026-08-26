@@ -15,6 +15,8 @@ export interface ChatRequest {
   /** Stream deltas when true (providers may also deliver deltas in non-stream mode). */
   stream?: boolean;
   temperature?: number;
+  /** Cap on completion tokens (diagnostics / cost control). */
+  maxTokens?: number;
   /** Streaming text callback — the loop forwards it as `llm.delta` events. */
   onDelta?: (delta: { text: string }) => void;
   /** Cancellation. Providers should abort in-flight requests when aborted. */

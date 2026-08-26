@@ -51,6 +51,31 @@ describe('OpenAICompatibleProvider wire round-trip (fake fetch)', () => {
     },
   };
 
+  it('forwards maxTokens as max_tokens', async () => {
+    let sentBody: { max_tokens?: number } = {};
+    const fakeFetch = async (url: unknown, init: { body?: string }): Promise<Response> => {
+      sentBody = JSON.parse(String(init?.body)) as { max_tokens?: number };
+      const payload = {
+        id: 'x',
+        object: 'chat.completion',
+        created: 0,
+        model: 'm',
+        choices: [{ index: 0, message: { role: 'assistant', content: 'pong' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+      };
+      return new Response(JSON.stringify(payload), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+    const provider = new OpenAICompatibleProvider({
+      model: 'm',
+      apiKey: 'k',
+      baseURL: 'http://fake.local',
+      maxRetries: 0,
+      fetch: fakeFetch as unknown as Fetch,
+    });
+    await provider.chat({ messages: [{ role: 'user', content: 'hi' }], stream: false, maxTokens: 4 });
+    expect(sentBody.max_tokens).toBe(4);
+  });
+
   it('sends dot-free tool names and decodes returned tool calls', async () => {
     let sentTools: Array<{ function?: { name?: string } }> = [];
 

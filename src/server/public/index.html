@@ -21,10 +21,11 @@
 
       <section class="card cwd-card">
         <div class="card-title">
-          <span>📁 工作目录</span>
-          <button id="cwd-open" class="btn btn-ghost btn-sm" title="选择工作目录">切换</button>
+          <span>📁 工作区</span>
+          <button id="cwd-open" class="btn btn-ghost btn-sm" title="选择工作区（agent 读写文件、执行命令都在这里）">切换</button>
         </div>
         <div id="cwd-path" class="cwd-path" title=""></div>
+        <div class="cwd-note">agent 生成的文件、命令输出都在此目录，与产品代码隔离</div>
       </section>
 
       <section class="card">
@@ -70,7 +71,7 @@
             <button class="btn btn-suggest" data-prompt="用 git log 查看最近提交，总结一下项目进展">📜 总结 git 历史</button>
             <button class="btn btn-suggest" data-prompt="运行 npm test 并把测试结果告诉我">🧪 运行测试</button>
           </div>
-          <div class="empty-hint">💡 先点左侧「工作目录 → 切换」选一个项目文件夹，再开始对话</div>
+          <div class="empty-hint">💡 先点左侧「工作区 → 切换」选一个项目文件夹，agent 生成的所有内容都会放在这里，与产品代码隔离</div>
         </div>
       </div>
 
@@ -91,7 +92,7 @@
   <div id="dir-modal" class="modal-mask hidden">
     <div class="modal">
       <div class="modal-head">
-        <span class="modal-title">📁 选择工作目录</span>
+        <span class="modal-title">📁 选择工作区</span>
         <button id="dir-close" class="btn btn-ghost btn-sm">✕</button>
       </div>
       <div id="dir-crumbs" class="crumbs"></div>

@@ -160,6 +160,13 @@ body::before {
 
 .cwd-path:hover { border-color: rgba(34, 211, 238, 0.4); }
 
+.cwd-note {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 /* 运行环境 */
 .kv-row {
   display: flex;
