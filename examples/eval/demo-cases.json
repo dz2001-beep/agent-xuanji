@@ -1,0 +1,54 @@
+{
+  "description": "场景化评测集示例：真实任务用例（配合真实模型使用；--mock 时仅基础成功断言生效）",
+  "cases": [
+    {
+      "id": "list-workspace",
+      "prompt": "列出当前工作区里有哪些文件",
+      "expect": {
+        "toolSequence": ["fs.list_dir"],
+        "outputContains": ["文件"],
+        "maxIterations": 6,
+        "maxTokens": 2000
+      }
+    },
+    {
+      "id": "read-and-summarize",
+      "prompt": "读取 examples/demo.ts 并总结它做什么",
+      "expect": {
+        "toolSequence": ["fs.read_file"],
+        "maxIterations": 6,
+        "maxTokens": 3000
+      }
+    },
+    {
+      "id": "web-search",
+      "prompt": "搜索一下 Model Context Protocol 是什么",
+      "expect": {
+        "toolSequence": ["web.search"],
+        "outputContains": ["MCP"],
+        "maxIterations": 6,
+        "maxTokens": 3000
+      }
+    },
+    {
+      "id": "weather-no-city",
+      "prompt": "今天天气怎么样",
+      "expect": {
+        "toolSequence": ["weather.current"],
+        "outputContains": ["天气"],
+        "maxIterations": 6,
+        "maxTokens": 2000
+      }
+    },
+    {
+      "id": "direct-answer",
+      "prompt": "用一句话介绍你自己",
+      "expect": {
+        "success": true,
+        "outputContains": ["agent"],
+        "maxIterations": 3,
+        "maxTokens": 500
+      }
+    }
+  ]
+}

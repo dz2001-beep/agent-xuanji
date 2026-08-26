@@ -196,6 +196,9 @@ xuanji run --trace run.jsonl "问题"   # 运行并记录可重放的 JSONL 轨�
 xuanji replay run.jsonl       # 离线重放轨迹（不调模型）：校验事件顺序 + 统计
 xuanji trace diff golden.jsonl actual.jsonl  # 黄金轨迹比对（agent 回归测试）
 xuanji skill learn --dir traces/ --name code-review -o skills/code-review/SKILL.md  # 成功轨迹 → 可复用技能
+xuanji eval run --dataset examples/eval/demo-cases.json --label v1 -o report.json   # 场景化评测 → 指标报告
+xuanji eval diff report-before.json report-after.json  # 版本回归：通过率/token 变化、新增失败
+xuanji trace report run.jsonl -o report.md             # 链路报告：时间线/工具/耗时/token（问题排查）
 xuanji mcp list              # 列出配置中 MCP server 的工具
 xuanji skills list           # 列出已加载技能
 xuanji skills show <name>    # 查看某个技能的完整指令

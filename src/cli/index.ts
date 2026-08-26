@@ -424,27 +424,103 @@ program
 
 program
   .command('trace')
-  .description('Trace tooling: diff two traces (golden vs actual) for regression testing')
-  .argument('<action>', 'action: diff')
-  .argument('<golden>', 'golden trace file')
-  .argument('<actual>', 'actual trace file')
-  .action(async (action: string, goldenPath: string, actualPath: string) => {
+  .description('Trace tooling: diff (regression) | report (link-view markdown)')
+  .argument('<action>', 'action: diff | report')
+  .argument('<arg1>', 'for diff: golden trace; for report: trace file')
+  .argument('[arg2]', 'for diff: actual trace; for report: output path (optional)')
+  .action(async (action: string, arg1: string, arg2?: string) => {
     const { TraceRecorder } = await import('../trace.js');
-    const { compareTraces } = await import('../replay.js');
-    const golden = await TraceRecorder.load(goldenPath);
-    const actual = await TraceRecorder.load(actualPath);
-    const diff = compareTraces(golden.events, actual.events);
+    if (action === 'diff') {
+      const { compareTraces } = await import('../replay.js');
+      const golden = await TraceRecorder.load(arg1);
+      const actual = await TraceRecorder.load(arg2!);
+      const diff = compareTraces(golden.events, actual.events);
 
-    console.log(`\n  黄金轨迹: ${goldenPath}`);
-    console.log(`  实际轨迹: ${actualPath}`);
-    if (diff.identical) {
-      console.log('  ✅ 行为一致（状态/轮次/工具序列/token 全部匹配）');
+      console.log(`\n  黄金轨迹: ${arg1}`);
+      console.log(`  实际轨迹: ${arg2}`);
+      if (diff.identical) {
+        console.log('  ✅ 行为一致（状态/轮次/工具序列/token 全部匹配）');
+      } else {
+        console.log(`  ⚠ 行为漂移 (${diff.differences.length} 处):`);
+        for (const d of diff.differences) console.log(`    - ${d}`);
+        process.exitCode = 1;
+      }
+      console.log('');
+    } else if (action === 'report') {
+      const { renderTraceReport } = await import('../trace_report.js');
+      const trace = await TraceRecorder.load(arg1);
+      const md = renderTraceReport(trace);
+      if (arg2) {
+        const { promises: fs } = await import('node:fs');
+        await fs.writeFile(arg2, md, 'utf8');
+        console.log(`[xuanji] 链路报告已生成 → ${arg2}`);
+      } else {
+        console.log(md);
+      }
     } else {
-      console.log(`  ⚠ 行为漂移 (${diff.differences.length} 处):`);
-      for (const d of diff.differences) console.log(`    - ${d}`);
-      process.exitCode = 1;
+      console.error(`xuanji: 未知 action "${action}"（支持 diff / report）`);
+      process.exit(1);
     }
-    console.log('');
+  });
+
+/* ------------------------------- eval ------------------------------ */
+
+const evalCmd = program
+  .command('eval')
+  .description('Agent evaluation: run a scenario dataset → metrics report; diff two reports (version regression)');
+
+evalCmd
+  .command('run')
+  .description('Run an eval dataset and produce a metrics report (pass rate / token / tool efficiency)')
+  .option('--dataset <path>', 'eval cases JSON file')
+  .option('--label <name>', 'report label (default: default)')
+  .option('-o, --out <path>', 'write report JSON to this path')
+  .option('--mock', 'use the deterministic mock provider (no API key needed)')
+  .option('-c, --config <path>', `config file (default ${DEFAULT_CONFIG})`)
+  .action(async (opts: { dataset?: string; label?: string; out?: string; mock?: boolean; config?: string }) => {
+    const { runEval, serializeReport, formatReportTable } = await import('../eval.js');
+    if (!opts.dataset) {
+      console.error('xuanji: 需要 --dataset 指定评测集 JSON');
+      process.exit(1);
+    }
+    const { promises: fs } = await import('node:fs');
+    const dataset = JSON.parse(await fs.readFile(opts.dataset, 'utf8')) as { cases: import('../eval.js').EvalCase[] };
+    const cfg = await resolveConfig(opts as CliOptions);
+    const harness = await Harness.create({ config: cfg, forceMock: opts.mock }).catch((err: Error) => {
+      console.error(`[xuanji] 启动失败: ${err.message}`);
+      console.error('  提示: 设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY；离线体验可加 --mock');
+      process.exit(1);
+    });
+    if (!harness) process.exit(1);
+    try {
+      const report = await runEval(dataset.cases, (prompt) => harness.run(prompt), { label: opts.label });
+      console.log(`\n  ═══ Agent 效果评估: ${report.label} ═══`);
+      console.log(formatReportTable(report));
+      if (opts.out) {
+        await fs.writeFile(opts.out, serializeReport(report), 'utf8');
+        console.log(`\n[报告] 已保存 → ${opts.out}`);
+      }
+      console.log('');
+      if (report.summary.passed < report.summary.total) process.exitCode = 1;
+    } finally {
+      await harness.dispose();
+    }
+  });
+
+evalCmd
+  .command('diff')
+  .description('Compare two eval reports (before/after or A/B): pass-rate & token deltas, new failures')
+  .argument('<before>', 'before report JSON')
+  .argument('<after>', 'after report JSON')
+  .action(async (beforePath: string, afterPath: string) => {
+    const { compareEvalReports, formatDiff } = await import('../eval.js');
+    const { promises: fs } = await import('node:fs');
+    const before = JSON.parse(await fs.readFile(beforePath, 'utf8'));
+    const after = JSON.parse(await fs.readFile(afterPath, 'utf8'));
+    const diff = compareEvalReports(before, after);
+    console.log(`\n  ═══ 评测对比: ${before.label} → ${after.label} ═══`);
+    console.log(formatDiff(diff));
+    if (!diff.identical) process.exitCode = 1;
   });
 
 /* ------------------------------ doctor ----------------------------- */
