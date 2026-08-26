@@ -8,6 +8,7 @@
  */
 
 import OpenAI from 'openai';
+import type { Fetch } from 'openai/core';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions.js';
 import type { ChatProvider, ChatRequest, ChatResponse } from './provider.js';
 import type { Message, ToolCall } from '../types.js';
@@ -20,6 +21,8 @@ export interface OpenAIProviderOptions {
   baseURL?: string;
   temperature?: number;
   maxRetries?: number;
+  /** Custom fetch impl (tests, proxies). Typed to the SDK's own Fetch. */
+  fetch?: Fetch;
 }
 
 function toWireMessage(m: Message): ChatCompletionMessageParam {
@@ -36,7 +39,7 @@ function toWireMessage(m: Message): ChatCompletionMessageParam {
               tool_calls: m.toolCalls.map((tc) => ({
                 id: tc.id,
                 type: 'function' as const,
-                function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+                function: { name: toWireToolName(tc.name), arguments: JSON.stringify(tc.arguments) },
               })),
             }
           : {}),
@@ -46,10 +49,29 @@ function toWireMessage(m: Message): ChatCompletionMessageParam {
   }
 }
 
+/**
+ * Wire-name translation for tools.
+ *
+ * harness tool names use namespacing dots (`fs.read_file`, `weather.current`),
+ * but OpenAI-compatible APIs only allow `^[a-zA-Z0-9_-]+$` in tool names and
+ * reject dots with a 400. We therefore encode dots as `__` on the wire and
+ * decode them back when parsing the model's tool calls. Underscores already
+ * present in a name are left untouched (only `__` is a code point).
+ */
+const WIRE_SEP = '__';
+
+export function toWireToolName(name: string): string {
+  return name.replace(/\./g, WIRE_SEP);
+}
+
+export function fromWireToolName(name: string): string {
+  return name.replace(/__/g, '.');
+}
+
 function toWireTool(t: Tool) {
   return {
     type: 'function' as const,
-    function: { name: t.name, description: t.description, parameters: t.inputSchema },
+    function: { name: toWireToolName(t.name), description: t.description, parameters: t.inputSchema },
   };
 }
 
@@ -67,6 +89,7 @@ export class OpenAICompatibleProvider implements ChatProvider {
       apiKey: opts.apiKey ?? 'missing-api-key',
       baseURL: opts.baseURL,
       maxRetries: opts.maxRetries ?? 2,
+      ...(opts.fetch ? { fetch: opts.fetch } : {}),
     });
   }
 
@@ -158,7 +181,7 @@ export class OpenAICompatibleProvider implements ChatProvider {
       .sort(([a], [b]) => a - b)
       .map(([, acc]) => ({
         id: acc.id ?? `call_${Math.random().toString(36).slice(2, 10)}`,
-        name: acc.name ?? 'unknown',
+        name: fromWireToolName(acc.name ?? 'unknown'),
         arguments: parseArguments(acc.arguments ?? ''),
       }));
 
@@ -170,7 +193,7 @@ function parseToolCalls(toolCalls: OpenAI.Chat.Completions.ChatCompletionMessage
   if (!toolCalls) return [];
   return toolCalls.map((tc) => ({
     id: tc.id,
-    name: tc.function.name,
+    name: fromWireToolName(tc.function.name),
     arguments: parseArguments(tc.function.arguments),
   }));
 }
