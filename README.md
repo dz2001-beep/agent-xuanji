@@ -189,6 +189,9 @@ xuanji run "prompt..."       # 命令行对话（流式输出；无 prompt 读 s
 xuanji run --mock "hi"       # 离线模式
 xuanji ui                    # 启动工作台（-p 端口 / --no-open / --log-file）
 xuanji doctor                # 一键自检：Key / 模型 / 工具名 / 工作区
+xuanji run --trace run.jsonl "问题"   # 运行并记录可重放的 JSONL 轨迹
+xuanji replay run.jsonl       # 离线重放轨迹（不调模型）：校验事件顺序 + 统计
+xuanji trace diff golden.jsonl actual.jsonl  # 黄金轨迹比对（agent 回归测试）
 xuanji mcp list              # 列出配置中 MCP server 的工具
 xuanji skills list           # 列出已加载技能
 xuanji skills show <name>    # 查看某个技能的完整指令

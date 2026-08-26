@@ -63,8 +63,9 @@ program
   .option('--mock', 'use the deterministic mock provider (no API key needed)')
   .option('--no-stream', 'disable streaming output')
   .option('--verbose', 'print the full event timeline and transcript')
+  .option('--trace <path>', 'save the run as a replayable JSONL trace (e.g. /tmp/run.jsonl)')
   .option('-i, --max-iterations <n>', 'cap loop iterations', parseInt)
-  .action(async (promptWords: string[], opts: CliOptions & { maxIterations?: number }) => {
+  .action(async (promptWords: string[], opts: CliOptions & { maxIterations?: number; trace?: string }) => {
     let prompt = promptWords.join(' ');
     if (!prompt && process.stdin.isTTY) {
       console.error('xuanji: no prompt given; pass one or pipe text via stdin');
@@ -86,10 +87,14 @@ program
     });
     if (!harness) process.exit(1);
     try {
+      const { TraceRecorder } = await import('../trace.js');
+      const recorder = opts.trace ? new TraceRecorder() : null;
+
       let streamed = false;
       const agent = harness.buildAgent({
         stream: opts.stream,
         onEvent: (e) => {
+          recorder?.onEvent(e);
           if (e.type === 'llm.delta') {
             streamed = true;
             process.stdout.write(e.text);
@@ -104,6 +109,12 @@ program
       // Providers that deliver the final answer without deltas still need it printed.
       if (!streamed && result.output) {
         process.stdout.write(result.output);
+      }
+
+      if (recorder) {
+        recorder.setContext({ input: prompt, provider: harness.provider.name, model: harness.config.provider.model });
+        await recorder.save(opts.trace!);
+        console.log(`\n[轨迹] 已保存 ${recorder.eventCount} 个事件 → ${opts.trace}`);
       }
 
       process.stdout.write('\n\n');
@@ -308,6 +319,61 @@ program
       process.on('SIGTERM', () => void shutdown());
     },
   );
+
+/* ------------------------------ replay ----------------------------- */
+
+program
+  .command('replay')
+  .description('Offline replay of a recorded trace: validate order, show stats (no model calls)')
+  .argument('<trace>', 'path to a JSONL trace file (from run --trace)')
+  .action(async (tracePath: string) => {
+    const { TraceRecorder } = await import('../trace.js');
+    const { summarizeEvents } = await import('../replay.js');
+    const trace = await TraceRecorder.load(tracePath);
+    const s = summarizeEvents(trace.events);
+
+    console.log(`\n  ═══ 轨迹重放: ${trace.meta.id} ═══`);
+    console.log(`  输入     : ${trace.meta.input.slice(0, 60)}`);
+    console.log(`  状态     : ${s.status} | 轮次: ${s.iterations} | 工具调用: ${s.toolCalls}`);
+    console.log(`  tokens   : ${s.tokens.totalTokens}（prompt ${s.tokens.promptTokens} / completion ${s.tokens.completionTokens}）`);
+    console.log(`  事件数   : ${s.eventCount}`);
+    console.log(`  工具序列 : ${s.toolSequence.join(' → ') || '(无)'}`);
+    if (s.violations.length > 0) {
+      console.log(`  ⚠ 顺序校验失败 (${s.violations.length}):`);
+      for (const v of s.violations) console.log(`    - ${v}`);
+      process.exitCode = 1;
+    } else {
+      console.log('  顺序校验 : ✅ 事件序列合法');
+    }
+    console.log('  ═══════════════════════════════════\n');
+  });
+
+/* ------------------------------- trace ----------------------------- */
+
+program
+  .command('trace')
+  .description('Trace tooling: diff two traces (golden vs actual) for regression testing')
+  .argument('<action>', 'action: diff')
+  .argument('<golden>', 'golden trace file')
+  .argument('<actual>', 'actual trace file')
+  .action(async (action: string, goldenPath: string, actualPath: string) => {
+    const { TraceRecorder } = await import('../trace.js');
+    const { compareTraces } = await import('../replay.js');
+    const golden = await TraceRecorder.load(goldenPath);
+    const actual = await TraceRecorder.load(actualPath);
+    const diff = compareTraces(golden.events, actual.events);
+
+    console.log(`\n  黄金轨迹: ${goldenPath}`);
+    console.log(`  实际轨迹: ${actualPath}`);
+    if (diff.identical) {
+      console.log('  ✅ 行为一致（状态/轮次/工具序列/token 全部匹配）');
+    } else {
+      console.log(`  ⚠ 行为漂移 (${diff.differences.length} 处):`);
+      for (const d of diff.differences) console.log(`    - ${d}`);
+      process.exitCode = 1;
+    }
+    console.log('');
+  });
 
 /* ------------------------------ doctor ----------------------------- */
 
