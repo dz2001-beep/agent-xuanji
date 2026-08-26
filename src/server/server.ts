@@ -22,11 +22,16 @@ import { ChatSession } from './session.js';
 
 const PUBLIC_DIR = fileURLToPath(new URL('./public/', import.meta.url));
 
+export type UiLogLevel = 'info' | 'warn' | 'error';
+export type UiLogger = (level: UiLogLevel, message: string) => void;
+
 export interface UiServerOptions {
   harness: Harness;
   port?: number;
   host?: string;
   cwd?: string;
+  /** Log sink; defaults to no-op. Wire it to console from the CLI. */
+  logger?: UiLogger;
 }
 
 export class UiServer {
@@ -34,13 +39,19 @@ export class UiServer {
   private readonly harness: Harness;
   private readonly port: number;
   private readonly host: string;
+  private readonly logger: UiLogger;
   private server: http.Server | null = null;
 
   constructor(opts: UiServerOptions) {
     this.harness = opts.harness;
     this.port = opts.port ?? 8787;
     this.host = opts.host ?? '127.0.0.1';
+    this.logger = opts.logger ?? (() => {});
     this.session = new ChatSession(opts.harness, opts.cwd ?? process.cwd());
+  }
+
+  private log(level: UiLogLevel, message: string): void {
+    this.logger(level, message);
   }
 
   get url(): string {
@@ -51,6 +62,7 @@ export class UiServer {
   async start(): Promise<{ url: string; port: number }> {
     this.server = http.createServer((req, res) => {
       void this.route(req, res).catch((err) => {
+        this.log('error', `route error ${req.method} ${req.url ?? ''}: ${(err as Error).message}`);
         if (!res.headersSent) {
           sendJson(res, 500, { error: (err as Error).message });
         } else {
@@ -84,11 +96,13 @@ export class UiServer {
     if (method === 'POST' && url.pathname === '/api/chat') return this.handleChat(req, res);
     if (method === 'POST' && url.pathname === '/api/abort') {
       this.session.abort();
+      this.log('info', 'abort requested');
       return sendJson(res, 200, { ok: true });
     }
     if (method === 'POST' && url.pathname === '/api/cwd') {
       const { path: p } = await readJsonBody(req);
       await this.session.setCwd(String(p));
+      this.log('info', `cwd → ${this.session.cwd}`);
       return sendJson(res, 200, { ok: true, cwd: this.session.cwd });
     }
     if (method === 'GET' && url.pathname === '/api/dirs') {
@@ -97,6 +111,7 @@ export class UiServer {
     }
     if (method === 'POST' && url.pathname === '/api/clear') {
       this.session.clearHistory();
+      this.log('info', 'history cleared');
       return sendJson(res, 200, { ok: true });
     }
 
@@ -108,6 +123,7 @@ export class UiServer {
     if (typeof message !== 'string' || !message.trim()) {
       return sendJson(res, 400, { error: 'message is required' });
     }
+    this.log('info', `chat start: ${String(message).slice(0, 80)}${String(message).length > 80 ? '…' : ''}`);
 
     res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
@@ -122,8 +138,11 @@ export class UiServer {
 
     try {
       await this.session.chat(message, emit);
+      this.log('info', 'chat finished');
     } catch (err) {
-      emit({ type: 'error', message: (err as Error).message });
+      const e = err as Error;
+      this.log('error', `chat failed: ${e.message}`);
+      emit({ type: 'error', message: e.message });
     }
     res.end();
   }

@@ -202,7 +202,12 @@ function handleFrame(frame) {
     case 'meta':
       els.kvProvider.textContent = frame.provider;
       els.kvModel.textContent = frame.model;
-      if (frame.selectedSkills?.length) {
+      if (frame.provider === 'mock') {
+        showBanner(
+          '⚠ 当前为 Mock 离线演示模式（未检测到有效 API Key）。设置 DEEPSEEK_API_KEY 后重启 ui 即可用真实模型。',
+          true,
+        );
+      } else if (frame.selectedSkills?.length) {
         showBanner(`✨ 已自动注入技能：${frame.selectedSkills.map((s) => `「${s}」`).join('、')}，正在执行`);
       }
       break;

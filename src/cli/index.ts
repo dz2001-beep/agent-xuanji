@@ -10,11 +10,12 @@
  */
 
 import { Command } from 'commander';
-import { promises as fs } from 'node:fs';
+import { promises as fs, appendFileSync } from 'node:fs';
 import path from 'node:path';
 import { Harness } from '../harness/harness.js';
 import { loadConfigFile, type HarnessConfig } from '../harness/config.js';
 import { summarizeSkill } from '../skills/skill.js';
+import type { UiLogger } from '../server/server.js';
 
 const DEFAULT_CONFIG = 'harness.config.json';
 
@@ -72,7 +73,14 @@ program
     const cfg = await resolveConfig(opts);
     if (opts.maxIterations) cfg.budget = { ...cfg.budget, maxIterations: opts.maxIterations };
 
-    const harness = await Harness.create({ config: cfg, forceMock: opts.mock });
+    const harness = await Harness.create({ config: cfg, forceMock: opts.mock }).catch((err: Error) => {
+      console.error(`[harness-kit] 启动失败: ${err.message}`);
+      if (err.message.includes('API key')) {
+        console.error('  提示: 设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY 后重试；离线体验可加 --mock');
+      }
+      process.exit(1);
+    });
+    if (!harness) process.exit(1);
     try {
       let streamed = false;
       const agent = harness.buildAgent({
@@ -196,37 +204,123 @@ program
   .option('--mock', 'force the deterministic mock provider (no API key needed)')
   .option('--no-open', 'do not auto-open the browser')
   .option('--cwd <path>', 'initial working directory (default: process cwd)')
-  .action(async (opts: { port?: number; config?: string; mock?: boolean; open?: boolean; cwd?: string }) => {
-    const cfg = await resolveConfig(opts as CliOptions);
-    const harness = await Harness.create({ config: cfg, forceMock: opts.mock });
-    const { UiServer } = await import('../server/server.js');
-    const server = new UiServer({ harness, port: opts.port ?? 8787, cwd: opts.cwd });
+  .option('--log-file <path>', 'also append server logs to this file (e.g. /tmp/harness-ui.log)')
+  .action(
+    async (opts: {
+      port?: number;
+      config?: string;
+      mock?: boolean;
+      open?: boolean;
+      cwd?: string;
+      logFile?: string;
+    }) => {
+      const envOpenAI = process.env.OPENAI_API_KEY;
+      const envDeepSeek = process.env.DEEPSEEK_API_KEY;
+      const openAIEmpty = typeof envOpenAI === 'string' && envOpenAI.trim() === '';
+      const deepSeekEmpty = typeof envDeepSeek === 'string' && envDeepSeek.trim() === '';
+      const cfg = await resolveConfig(opts as CliOptions);
 
-    const { url } = await server.start();
-    console.log('');
-    console.log('  ╭──────────────────────────────────────────╮');
-    console.log('  │   harness-kit 工作台已启动                │');
-    console.log('  ╰──────────────────────────────────────────╯');
-    console.log(`  浏览器访问: ${url}`);
-    console.log(`  工作目录  : ${server.session.cwd}`);
-    console.log(`  provider  : ${harness.provider.name}（Ctrl+C 退出）`);
-    console.log('');
+      // 空字符串 Key 是最常见的"以为设置了其实没有"的坑，给醒目标记。
+      if (!opts.mock && (openAIEmpty || deepSeekEmpty)) {
+        console.warn('');
+        console.warn(`  ⚠ 检测到 ${openAIEmpty ? 'OPENAI_API_KEY' : 'DEEPSEEK_API_KEY'} 已设置但值是空字符串（export XXX=""）。`);
+        console.warn(`    空值会被视为"未设置"。正确设置：export DEEPSEEK_API_KEY=sk-你的key 后重新运行。`);
+        console.warn('');
+      }
 
-    if (opts.open !== false) {
-      const { spawn } = await import('node:child_process');
-      spawn('open', [url], { stdio: 'ignore', detached: true }).unref();
-    }
+      // UI 是交互工具：没有有效 Key 时自动降级为 mock 并继续启动（界面照常打开，
+      // banner 与前端都会明确提示原因），而不是直接失败。
+      const hasValidKey = !!(cfg.provider.apiKey?.trim() || envOpenAI?.trim() || envDeepSeek?.trim());
+      const effectiveMock = opts.mock || !hasValidKey;
+      if (effectiveMock && !opts.mock) {
+        console.warn('  ⚠ 未检测到有效 API Key，本次以 mock（离线演示）模式启动。');
+        console.warn('    设置 DEEPSEEK_API_KEY 后重新运行本命令即可使用真实模型。');
+        console.warn('');
+      }
 
-    const shutdown = async () => {
-      await server.stop();
-      await harness.dispose();
-      process.exit(0);
-    };
-    process.on('SIGINT', () => void shutdown());
-    process.on('SIGTERM', () => void shutdown());
-  });
+      const harness = await Harness.create({ config: cfg, forceMock: effectiveMock }).catch((err: Error) => {
+        console.error(`[harness-kit] 启动失败: ${err.message}`);
+        if (err.message.includes('API key')) {
+          console.error('  提示: 设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY 后重试；离线体验可加 --mock');
+        }
+        process.exit(1);
+      });
+      if (!harness) process.exit(1);
+
+      const { UiServer } = await import('../server/server.js');
+      const logger: UiLogger = createUiLogger(opts.logFile);
+      const server = new UiServer({
+        harness,
+        port: opts.port ?? 8787,
+        cwd: opts.cwd,
+        logger,
+      });
+
+      const { url } = await server.start().catch((err: Error & { code?: string }) => {
+        if (err.code === 'EADDRINUSE') {
+          console.error(`[harness-kit] 端口 ${opts.port ?? 8787} 已被占用，换一个端口：--port 9000`);
+        } else {
+          console.error(`[harness-kit] 服务启动失败: ${err.message}`);
+        }
+        void harness.dispose();
+        process.exit(1);
+      });
+
+      const keyLabel = opts.mock
+        ? 'mock（--mock 强制）'
+        : effectiveMock
+          ? '✗ 未检测到有效 Key → 已降级 mock（离线）'
+          : envOpenAI?.trim()
+            ? '✓ OPENAI_API_KEY'
+            : '✓ DEEPSEEK_API_KEY';
+
+      console.log('');
+      console.log('  ╭──────────────────────────────────────────╮');
+      console.log('  │   harness-kit 工作台已启动                │');
+      console.log('  ╰──────────────────────────────────────────╯');
+      console.log(`  浏览器访问 : ${url}`);
+      console.log(`  工作目录   : ${server.session.cwd}`);
+      console.log(`  API Key    : ${keyLabel}`);
+      console.log(`  provider   : ${harness.provider.name}`);
+      console.log(`  model      : ${harness.config.provider.model}`);
+      console.log(`  MCP servers: ${harness.mcp.handlesList().map((h) => h.id).join(', ') || '无'}`);
+      console.log(`  skills     : ${harness.skills.list().map((s) => s.name).join(', ') || '无'}`);
+      console.log(`  工具数量   : ${harness.tools.names().length}`);
+      if (opts.logFile) console.log(`  日志文件   : ${opts.logFile}`);
+      console.log('  运行日志见下方，Ctrl+C 退出');
+      console.log('');
+
+      if (opts.open !== false) {
+        const { spawn } = await import('node:child_process');
+        spawn('open', [url], { stdio: 'ignore', detached: true }).unref();
+      }
+
+      const shutdown = async () => {
+        await server.stop();
+        await harness.dispose();
+        process.exit(0);
+      };
+      process.on('SIGINT', () => void shutdown());
+      process.on('SIGTERM', () => void shutdown());
+    },
+  );
 
 /* ------------------------------ helpers ---------------------------- */
+
+/** Timestamped log sink: console + optional file, used by the ui server. */
+function createUiLogger(logFile?: string): UiLogger {
+  return (level, message) => {
+    const line = `[${new Date().toISOString()}] [${level}] ${message}`;
+    console.log(`  ${line}`);
+    if (logFile) {
+      try {
+        appendFileSync(logFile, `${line}\n`);
+      } catch (err) {
+        console.warn(`  [harness-kit] 无法写入日志文件 ${logFile}: ${(err as Error).message}`);
+      }
+    }
+  };
+}
 
 function oneLine(s: string): string {
   return s.replace(/\s+/g, ' ').trim();

@@ -130,4 +130,38 @@ describe('Harness', () => {
       if (savedDeepSeek) process.env.DEEPSEEK_API_KEY = savedDeepSeek;
     }
   });
+
+  it('treats an empty-string env API key as unset', async () => {
+    const savedOpenAI = process.env.OPENAI_API_KEY;
+    const savedDeepSeek = process.env.DEEPSEEK_API_KEY;
+    process.env.OPENAI_API_KEY = '';
+    process.env.DEEPSEEK_API_KEY = '';
+    try {
+      await expect(
+        Harness.create({ config: { provider: { type: 'openai', model: 'm' } } }),
+      ).rejects.toThrow(/API key/);
+    } finally {
+      if (savedOpenAI) process.env.OPENAI_API_KEY = savedOpenAI;
+      else delete process.env.OPENAI_API_KEY;
+      if (savedDeepSeek) process.env.DEEPSEEK_API_KEY = savedDeepSeek;
+      else delete process.env.DEEPSEEK_API_KEY;
+    }
+  });
+
+  it('falls back to a non-empty env key when config apiKey is an empty string', async () => {
+    const saved = process.env.DEEPSEEK_API_KEY;
+    process.env.OPENAI_API_KEY = '';
+    process.env.DEEPSEEK_API_KEY = 'sk-fallback-from-env';
+    try {
+      const harness = await Harness.create({
+        config: { provider: { type: 'openai', model: 'm', apiKey: '' } },
+      });
+      expect(harness.provider.name).toBe('openai-compatible');
+      await harness.dispose();
+    } finally {
+      process.env.OPENAI_API_KEY = '';
+      if (saved) process.env.DEEPSEEK_API_KEY = saved;
+      else delete process.env.DEEPSEEK_API_KEY;
+    }
+  });
 });

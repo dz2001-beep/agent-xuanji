@@ -143,13 +143,19 @@ function buildProvider(provider: HarnessConfig['provider'], opts: HarnessCreateO
   if (provider.type !== 'openai') {
     throw new Error(`unknown provider type "${provider.type}"`);
   }
-  const apiKey = opts.apiKey ?? provider.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.DEEPSEEK_API_KEY;
+  // Empty-string env keys (e.g. `export DEEPSEEK_API_KEY=""`) are treated as
+  // unset: pick the first non-empty candidate instead of the first defined one.
+  const candidates = [opts.apiKey, provider.apiKey, process.env.OPENAI_API_KEY, process.env.DEEPSEEK_API_KEY];
+  const apiKey = candidates.find((v): v is string => typeof v === 'string' && v.trim().length > 0);
   if (!apiKey) {
     throw new Error(
-      'no API key found: set config.provider.apiKey, OPENAI_API_KEY or DEEPSEEK_API_KEY (or pass --mock for an offline demo)',
+      'no API key found: set config.provider.apiKey, OPENAI_API_KEY or DEEPSEEK_API_KEY ' +
+        '(note: an empty value like DEEPSEEK_API_KEY="" counts as unset; pass --mock for an offline demo)',
     );
   }
-  const usingDeepSeekKey = !process.env.OPENAI_API_KEY && !!process.env.DEEPSEEK_API_KEY;
+  const openAIKey = process.env.OPENAI_API_KEY?.trim();
+  const deepSeekKey = process.env.DEEPSEEK_API_KEY?.trim();
+  const usingDeepSeekKey = !openAIKey && !!deepSeekKey;
   return new OpenAICompatibleProvider({
     model: provider.model,
     apiKey,

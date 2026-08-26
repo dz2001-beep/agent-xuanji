@@ -55,9 +55,19 @@ node dist/src/cli/index.js ui --port 8787 --no-open
 - **工具调用可视化**：每个工具调用渲染为可折叠卡片（参数 / 耗时 / 结果预览），失败标红。
 - **技能注入提示**：每次请求自动选中技能时给出提示条（`✨ 已注入技能：…`）。
 - **环境面板**：当前 provider / model / 可用工具 / 技能一览。
+- **启动诊断与日志**：启动时打印 API Key 状态 / provider / model / MCP / skills / 工具数；运行中的 chat、cwd 切换、错误都会带时间戳打印，可用 `--log-file` 落盘。
 - **深色终端科技风**：品牌渐变、玻璃拟态面板、等宽字体、网格背景、空状态引导页。
 
 > 服务只绑定 `127.0.0.1`，为本地开发工具设计（无鉴权）；生产部署需自行加认证与网络层。架构见 `src/server/`（`node:http` 零框架依赖 + SSE 事件流）。
+
+### 常见问题：API Key、日志、后台运行
+
+- **设置 Key**：`export DEEPSEEK_API_KEY=sk-你的key`（或写入 `~/.zshrc` 永久生效）。
+- **⚠ 空字符串陷阱**：`export DEEPSEEK_API_KEY=""` 会被视为"未设置"（空值不是有效 Key）。`ui` 命令会给出醒目标记并自动降级为 mock 模式启动；`run` 命令会明确报错提示。
+- **没有 Key 也能用**：`ui` 自动降级 mock（离线演示），界面顶部有红字提示；设置有效 Key 后重启即为真实模型。
+- **日志**：`ui` 启动时打印完整诊断（API Key 状态 / provider / model / MCP / skills / 工具数），运行中的 chat / cwd 切换 / 错误带时间戳输出；加 `--log-file /tmp/harness-ui.log` 同时落盘。
+- **后台运行**：`nohup node dist/src/cli/index.js ui --no-open --log-file /tmp/harness-ui.log > /dev/null 2>&1 &`，日志在 `/tmp/harness-ui.log`；停止：`pkill -f "cli/index.js ui"`。
+- **端口占用**：`--port 9000` 换端口；占用时启动会明确提示。
 
 ```bash
 # 使用真实模型（任一即可）
