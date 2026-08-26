@@ -27,12 +27,37 @@
 ```bash
 # 克隆后
 npm install
-npm test          # 57 个单元/集成测试（全部离线，无网络依赖）
+npm test          # 67 个单元/集成测试（全部离线，无网络依赖）
 
 npm run demo      # 端到端 demo：MCP weather server + skills 自动注入 + Agent Loop
+
+npm run ui        # 启动本地对话客户端（浏览器界面，见下文）
 ```
 
-**没有 API Key 也能跑**：demo 默认使用确定性的 MockProvider（离线演示）；设置了 `OPENAI_API_KEY` 或 `DEEPSEEK_API_KEY` 后自动切换到真实模型（OpenAI 兼容协议）。
+**没有 API Key 也能跑**：demo 和 UI 默认使用确定性的 MockProvider（离线演示）；设置了 `OPENAI_API_KEY` 或 `DEEPSEEK_API_KEY` 后自动切换到真实模型（OpenAI 兼容协议）。
+
+---
+
+## 对话客户端（`harness-kit ui`）
+
+一个类似 Codex / Claude Code 的本地 Web 工作台，一条命令启动：
+
+```bash
+npm run ui                 # 构建并启动，自动打开浏览器 http://127.0.0.1:8787
+# 或（已构建后）
+node dist/src/cli/index.js ui --port 8787 --no-open
+```
+
+功能：
+
+- **流式对话**：发送任务后 agent 流式打字机输出，实时可中断（停止按钮 / Ctrl+C）。
+- **选择工作目录**：侧边栏「工作目录 → 切换」打开目录浏览器 —— 面包屑导航、子目录列表、手动输入路径都支持；切换后 `fs.*` 与 `shell.run` 工具**全部以该目录为基准运行**（相对路径解析、shell 默认 cwd）。
+- **工具调用可视化**：每个工具调用渲染为可折叠卡片（参数 / 耗时 / 结果预览），失败标红。
+- **技能注入提示**：每次请求自动选中技能时给出提示条（`✨ 已注入技能：…`）。
+- **环境面板**：当前 provider / model / 可用工具 / 技能一览。
+- **深色终端科技风**：品牌渐变、玻璃拟态面板、等宽字体、网格背景、空状态引导页。
+
+> 服务只绑定 `127.0.0.1`，为本地开发工具设计（无鉴权）；生产部署需自行加认证与网络层。架构见 `src/server/`（`node:http` 零框架依赖 + SSE 事件流）。
 
 ```bash
 # 使用真实模型（任一即可）
@@ -117,6 +142,7 @@ description: 审阅 TypeScript/JavaScript 代码，定位 bug 与安全隐患，
 ```bash
 harness-kit run "prompt..."      # 运行 agent（支持流式输出；无 prompt 时读 stdin）
 harness-kit run --mock "hi"      # 离线模式
+harness-kit ui                   # 启动本地对话客户端（浏览器界面 + 工作目录选择）
 harness-kit mcp list             # 列出配置中 MCP server 的工具
 harness-kit skills list          # 列出已加载的技能
 harness-kit skills show <name>   # 查看某个技能的完整指令
@@ -176,9 +202,10 @@ src/
 ├── mcp/         MCP 客户端注册表（stdio/http）、工具适配与命名空间
 ├── skills/      SKILL.md 解析、加载、相关性匹配、渲染注入
 ├── harness/     组合层：配置归一化 + 装配 provider/tools/mcp/skills
-└── cli/         commander CLI（run / mcp / skills / demo）
+├── server/      本地 Web 客户端：ChatSession + HTTP/SSE API + 前端（public/）
+└── cli/         commander CLI（run / ui / mcp / skills / demo）
 examples/        demo MCP server、示例 skills、带 bug 的样例代码、端到端 demo
-test/            vitest 单元 + 集成测试（57 个，全离线）
+test/            vitest 单元 + 集成测试（67 个，全离线）
 docs/            架构设计文档
 ```
 
@@ -190,7 +217,7 @@ npm run test:watch       # 监听模式
 npm run typecheck        # 纯类型检查
 ```
 
-覆盖：循环终止/重试/abort/超时/事件顺序、工具注册与参数校验、内置工具行为、SKILL.md 解析与中英文匹配、MCP in-memory 集成（真实协议路径）、Harness 组合与 skill 注入。
+覆盖：循环终止/重试/abort/超时/事件顺序、工具注册与参数校验、内置工具行为、SKILL.md 解析与中英文匹配、MCP in-memory 集成（真实协议路径）、Harness 组合与 skill 注入、Web 服务端（HTTP API + SSE 流 + 目录浏览 + cwd 切换）。
 
 ## 设计决策与扩展点
 

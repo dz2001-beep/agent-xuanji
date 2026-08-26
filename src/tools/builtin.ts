@@ -11,7 +11,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { Tool, ToolResult, toolError, toolResult } from './tool.js';
+import { Tool, ToolContext, ToolResult, toolError, toolResult } from './tool.js';
 
 export type BuiltinGroup = 'fs' | 'shell';
 
@@ -22,6 +22,12 @@ export function isBuiltinGroup(v: string): v is BuiltinGroup {
 }
 
 const MAX_OUTPUT = 20_000;
+
+/** Resolve a tool-given path against the session cwd when it is relative. */
+function resolvePath(p: string, ctx: ToolContext): string {
+  if (path.isAbsolute(p)) return p;
+  return ctx.cwd ? path.resolve(ctx.cwd, p) : path.resolve(p);
+}
 
 /* ------------------------------------------------------------------ */
 /* fs tools                                                            */
@@ -36,10 +42,10 @@ const fsTools: Tool[] = [
       properties: { path: { type: 'string', description: 'Absolute or cwd-relative file path' } },
       required: ['path'],
     },
-    async execute(input) {
+    async execute(input, ctx) {
       const { path: p } = input as { path: string };
       try {
-        const content = await fs.readFile(p, 'utf8');
+        const content = await fs.readFile(resolvePath(p, ctx), 'utf8');
         return toolResult(content.length > MAX_OUTPUT ? content.slice(0, MAX_OUTPUT) : content);
       } catch (err) {
         return toolError(`fs.read_file failed: ${(err as Error).message}`);
@@ -57,12 +63,13 @@ const fsTools: Tool[] = [
       },
       required: ['path', 'content'],
     },
-    async execute(input) {
+    async execute(input, ctx) {
       const { path: p, content } = input as { path: string; content: string };
+      const resolved = resolvePath(p, ctx);
       try {
-        await fs.mkdir(path.dirname(p), { recursive: true });
-        await fs.writeFile(p, content, 'utf8');
-        return toolResult({ written: content.length, path: p });
+        await fs.mkdir(path.dirname(resolved), { recursive: true });
+        await fs.writeFile(resolved, content, 'utf8');
+        return toolResult({ written: content.length, path: resolved });
       } catch (err) {
         return toolError(`fs.write_file failed: ${(err as Error).message}`);
       }
@@ -73,13 +80,13 @@ const fsTools: Tool[] = [
     description: 'List entries of a directory. Returns [{name, type: "file"|"dir"|"other"}] sorted by name.',
     inputSchema: {
       type: 'object',
-      properties: { path: { type: 'string', description: 'Directory path (default ".")' } },
+      properties: { path: { type: 'string', description: 'Directory path (default: cwd)' } },
       required: [],
     },
-    async execute(input) {
+    async execute(input, ctx) {
       const { path: p = '.' } = (input ?? {}) as { path?: string };
       try {
-        const entries = await fs.readdir(p, { withFileTypes: true });
+        const entries = await fs.readdir(resolvePath(p, ctx), { withFileTypes: true });
         const list = entries
           .map((e) => ({
             name: e.name,
@@ -104,7 +111,7 @@ interface ShellInput {
   timeoutMs?: number;
 }
 
-function runShell(input: ShellInput): Promise<ToolResult> {
+function runShell(input: ShellInput, ctx: ToolContext): Promise<ToolResult> {
   return new Promise<ToolResult>((resolve) => {
     const timeoutMs = Math.min(input.timeoutMs ?? 30_000, 60_000);
     let stdout = '';
@@ -112,7 +119,7 @@ function runShell(input: ShellInput): Promise<ToolResult> {
     let timedOut = false;
 
     const child = spawn(input.command, {
-      cwd: input.cwd,
+      cwd: input.cwd ?? ctx.cwd,
       shell: true,
       stdio: ['ignore', 'pipe', 'pipe'],
       env: process.env,
@@ -158,17 +165,17 @@ function runShell(input: ShellInput): Promise<ToolResult> {
 const shellTool: Tool = {
   name: 'shell.run',
   description:
-    'Run a shell command (uses the system shell). Returns {exitCode, stdout, stderr}. Default timeout 30s, max 60s. Use for building, testing, git, and any CLI task.',
+    'Run a shell command (uses the system shell). Returns {exitCode, stdout, stderr}. Default timeout 30s, max 60s. Use for building, testing, git, and any CLI task. Runs in the session working directory unless cwd is given.',
   inputSchema: {
     type: 'object',
     properties: {
       command: { type: 'string', description: 'The shell command line to execute' },
-      cwd: { type: 'string', description: 'Working directory (default: harness cwd)' },
+      cwd: { type: 'string', description: 'Working directory (default: session cwd)' },
       timeoutMs: { type: 'integer', description: 'Timeout in ms (default 30000, max 60000)' },
     },
     required: ['command'],
   },
-  execute: (input) => runShell(input as ShellInput),
+  execute: (input, ctx) => runShell(input as ShellInput, ctx),
 };
 
 /* ------------------------------------------------------------------ */

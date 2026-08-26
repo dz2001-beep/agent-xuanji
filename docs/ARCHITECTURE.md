@@ -140,6 +140,18 @@ score(query, skill) = Σ 4×queryToken∈skillName + 1×queryToken∈skillDescri
 
 组合根只做三件事：**归一化配置 → 装配子系统 → 暴露一个 run()**。失败策略：MCP 连接失败记日志但**不阻断**启动（一个 server 挂了不该让整个 harness 不可用）；skill 坏文件跳过并告警；未知内置工具组告警。这些"部分失败容忍"是运行时稳定性的基本功。
 
+## 6.5 工作目录贯穿（cwd）
+
+对话客户端引入"会话工作目录"后，cwd 成为一条贯穿全链路的上下文：`ChatSession.cwd` → `RunOptions.cwd` → `ToolContext.cwd` → 内置工具（fs 相对路径基于它解析、shell 默认 cwd 指向它）。核心 loop 与工具层因此能复用同一套代码服务 CLI 与 Web 两种入口，这也是"harness 上下文传播"的典型工程问题。
+
+## 6.6 Web 客户端（`src/server/`）
+
+本地 Web 工作台是一个**零框架依赖**的 `node:http` 服务（不引 express，路由与 SSE 手写，展示 HTTP 功底）：
+
+- **SSE 事件流**：`POST /api/chat` 返回 `text/event-stream`，把 AgentLoop 的类型化事件逐帧推给浏览器；前端用 `fetch + ReadableStream` 消费（EventSource 不支持 POST，因此不用它）。
+- **会话模型**：`ChatSession` 持有多轮历史（上限 60 条截断）、cwd、abort 生命周期；每次 chat 用 `Harness.run(messages)` 重放历史 —— 多轮上下文完整，且 skill 自动注入按最新用户消息计算。
+- **前端**：零构建原生 JS（无 webpack/vite），所有渲染走 `textContent` 防 XSS；工具卡片按 `callId` 关联状态，流式与一次性返回通过 `llm.delta` / `llm.turn` 双通道兼容（`llm.turn` 按已显示长度补差，避免重复）。
+
 ## 7. 测试策略
 
 | 层 | 手段 | 覆盖 |

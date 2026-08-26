@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>harness-kit 工作台</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- ══════════════════ 侧边栏 ══════════════════ -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">&gt;_</div>
+        <div class="brand-text">
+          <div class="brand-name">harness-kit</div>
+          <div class="brand-sub">agent harness · 工作台</div>
+        </div>
+      </div>
+
+      <section class="card cwd-card">
+        <div class="card-title">
+          <span>📁 工作目录</span>
+          <button id="cwd-open" class="btn btn-ghost btn-sm" title="选择工作目录">切换</button>
+        </div>
+        <div id="cwd-path" class="cwd-path" title=""></div>
+      </section>
+
+      <section class="card">
+        <div class="card-title"><span>🛰 运行环境</span></div>
+        <div class="kv">
+          <div class="kv-row"><span class="kv-k">provider</span><span id="kv-provider" class="kv-v">–</span></div>
+          <div class="kv-row"><span class="kv-k">model</span><span id="kv-model" class="kv-v">–</span></div>
+        </div>
+      </section>
+
+      <section class="card list-card">
+        <div class="card-title">
+          <span>🧰 工具 <span id="tools-count" class="chip">0</span></span>
+          <button class="btn btn-ghost btn-sm" data-toggle="tools-list">展开</button>
+        </div>
+        <ul id="tools-list" class="tag-list hidden"></ul>
+      </section>
+
+      <section class="card list-card">
+        <div class="card-title">
+          <span>📚 技能 <span id="skills-count" class="chip">0</span></span>
+          <button class="btn btn-ghost btn-sm" data-toggle="skills-list">展开</button>
+        </div>
+        <ul id="skills-list" class="tag-list hidden"></ul>
+      </section>
+
+      <div class="sidebar-footer">
+        <button id="clear-btn" class="btn btn-ghost btn-block">🗑 清空会话</button>
+        <div class="version">harness-kit v0.1.0 · MIT</div>
+      </div>
+    </aside>
+
+    <!-- ══════════════════ 主区 ══════════════════ -->
+    <main class="main">
+      <div id="messages" class="messages">
+        <!-- 空状态引导 -->
+        <div id="empty-state" class="empty-state">
+          <div class="empty-logo">&gt;_</div>
+          <h1 class="empty-title">harness-kit <span>工作台</span></h1>
+          <p class="empty-sub">Agent Loop · MCP · Skill —— 在下方输入你的任务，agent 会自动选技能、调工具、流式作答</p>
+          <div class="empty-tips">
+            <button class="btn btn-suggest" data-prompt="帮我看看当前目录里有什么文件，并简单介绍一下项目结构">👀 浏览当前目录</button>
+            <button class="btn btn-suggest" data-prompt="用 git log 查看最近提交，总结一下项目进展">📜 总结 git 历史</button>
+            <button class="btn btn-suggest" data-prompt="运行 npm test 并把测试结果告诉我">🧪 运行测试</button>
+          </div>
+          <div class="empty-hint">💡 先点左侧「工作目录 → 切换」选一个项目文件夹，再开始对话</div>
+        </div>
+      </div>
+
+      <!-- 输入区 -->
+      <div class="composer-wrap">
+        <div id="skill-banner" class="skill-banner hidden"></div>
+        <div class="composer">
+          <textarea id="input" rows="1" placeholder="输入任务，Enter 发送，Shift+Enter 换行…（Ctrl+C 可停止）" autofocus></textarea>
+          <button id="send-btn" class="btn btn-send" title="发送">发送 ↵</button>
+          <button id="stop-btn" class="btn btn-stop hidden" title="停止运行">■ 停止</button>
+        </div>
+        <div class="composer-hint">agent 可调用工具：fs 读写、shell 命令、MCP server（如天气/时间）</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ══════════════════ 目录选择弹窗 ══════════════════ -->
+  <div id="dir-modal" class="modal-mask hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <span class="modal-title">📁 选择工作目录</span>
+        <button id="dir-close" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <div id="dir-crumbs" class="crumbs"></div>
+      <div id="dir-list" class="dir-list"></div>
+      <div class="modal-foot">
+        <input id="dir-input" class="input" placeholder="/path/to/project" spellcheck="false" />
+        <button id="dir-cancel" class="btn btn-ghost">取消</button>
+        <button id="dir-confirm" class="btn btn-primary">确认切换</button>
+      </div>
+      <div id="dir-error" class="dir-error hidden"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

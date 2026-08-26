@@ -19,9 +19,20 @@ import { isBuiltinGroup, registerBuiltinTools } from '../tools/builtin.js';
 import { McpRegistry } from '../mcp/registry.js';
 import { SkillRegistry } from '../skills/registry.js';
 import { renderSkills } from '../skills/skill.js';
+import type { Message } from '../types.js';
 import { Agent, type AgentOptions, type AgentResult, type RunOptions } from '../loop/agent.js';
 import { normalizeConfig, type HarnessConfig } from './config.js';
 import { DEFAULT_SYSTEM } from './system.js';
+
+/** Extract the last user text from an input (used for skill selection). */
+function queryText(input: string | Message[]): string {
+  if (typeof input === 'string') return input;
+  for (let i = input.length - 1; i >= 0; i--) {
+    const m = input[i];
+    if (m?.role === 'user' && m.content) return m.content;
+  }
+  return '';
+}
 
 export interface HarnessCreateOptions {
   config: HarnessConfig;
@@ -95,15 +106,19 @@ export class Harness {
 
   /**
    * One-call entry point: auto-select skills for `input`, compose the system
-   * prompt, run the loop.
+   * prompt, run the loop. `input` may be a plain string or a message list
+   * (multi-turn history); skill selection uses the last user text.
    */
-  async run(input: string, opts: RunOptions & { agent?: Agent } = {}): Promise<AgentResult> {
+  async run(
+    input: string | Message[],
+    opts: RunOptions & { agent?: Agent } = {},
+  ): Promise<AgentResult> {
     const agent = opts.agent ?? this.buildAgent();
 
     let system = this.config.system || DEFAULT_SYSTEM;
     const skillsCfg = this.config.skills;
     if (skillsCfg.autoSelect && this.skills.size > 0) {
-      const selected = this.skills.select(input, {
+      const selected = this.skills.select(queryText(input), {
         top: skillsCfg.maxSelected,
         threshold: skillsCfg.threshold,
       });

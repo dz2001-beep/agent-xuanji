@@ -19,11 +19,12 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-public.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "demo": "npm run build && node dist/examples/demo.js",
+    "ui": "npm run build && node dist/src/cli/index.js ui",
     "dev": "tsx src/cli/index.ts",
     "prepare": "npm run build"
   },

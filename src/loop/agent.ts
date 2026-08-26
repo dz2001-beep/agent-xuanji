@@ -68,6 +68,8 @@ export interface RunOptions {
   system?: string;
   signal?: AbortSignal;
   sessionId?: string;
+  /** Session working directory — passed to tools so relative paths resolve against it. */
+  cwd?: string;
 }
 
 const DEFAULTS = {
@@ -204,6 +206,7 @@ export class Agent {
                 callId: call.id,
                 sessionId: runOpts.sessionId,
                 signal: runOpts.signal,
+                cwd: runOpts.cwd,
               }),
               this.opts.toolTimeoutMs!,
               `tool "${call.name}"`,
@@ -211,15 +214,15 @@ export class Agent {
           } catch (err) {
             if (isAbortError(err)) throw err;
             const error = err instanceof ToolError ? err : new Error(`tool "${call.name}" threw: ${(err as Error).message}`);
-            emitter.emit({ type: 'tool.error', name: call.name, error });
+            emitter.emit({ type: 'tool.error', name: call.name, callId: call.id, error });
             result = { ok: false, error: error.message };
           }
         }
       }
 
       const durationMs = Date.now() - started;
-      if (result.ok) emitter.emit({ type: 'tool.result', name: call.name, result, durationMs });
-      else emitter.emit({ type: 'tool.error', name: call.name, error: new Error(result.error) });
+      if (result.ok) emitter.emit({ type: 'tool.result', name: call.name, callId: call.id, result, durationMs });
+      else emitter.emit({ type: 'tool.error', name: call.name, callId: call.id, error: new Error(result.error) });
 
       state.messages.push({
         role: 'tool',

@@ -22,6 +22,11 @@ export interface ToolContext {
   sessionId?: string;
   /** Abort signal wired to the caller's cancellation. */
   signal?: AbortSignal;
+  /**
+   * Session working directory. Tools that accept relative paths resolve
+   * them against this (the chat client sets it to the user's chosen dir).
+   */
+  cwd?: string;
 }
 
 export type ToolResult = { ok: true; data: unknown } | { ok: false; error: string };

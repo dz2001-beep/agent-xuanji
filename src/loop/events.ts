@@ -16,8 +16,8 @@ export type AgentEvent =
   | { type: 'llm.delta'; text: string }
   | { type: 'llm.turn'; message: Message; usage?: TokenUsage }
   | { type: 'tool.call'; name: string; args: unknown; callId: string }
-  | { type: 'tool.result'; name: string; result: ToolResult; durationMs: number }
-  | { type: 'tool.error'; name: string; error: Error }
+  | { type: 'tool.result'; name: string; callId: string; result: ToolResult; durationMs: number }
+  | { type: 'tool.error'; name: string; callId: string; error: Error }
   | { type: 'agent.done'; result: AgentResult };
 
 export type AgentEventHandler = (event: AgentEvent) => void;

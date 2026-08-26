@@ -186,6 +186,46 @@ program
     await runDemo();
   });
 
+/* -------------------------------- ui ------------------------------- */
+
+program
+  .command('ui')
+  .description('Start the local web client (browser chat UI with a working-directory picker)')
+  .option('-p, --port <port>', 'port to listen on (default 8787)', parseInt)
+  .option('-c, --config <path>', `config file (default ${DEFAULT_CONFIG})`)
+  .option('--mock', 'force the deterministic mock provider (no API key needed)')
+  .option('--no-open', 'do not auto-open the browser')
+  .option('--cwd <path>', 'initial working directory (default: process cwd)')
+  .action(async (opts: { port?: number; config?: string; mock?: boolean; open?: boolean; cwd?: string }) => {
+    const cfg = await resolveConfig(opts as CliOptions);
+    const harness = await Harness.create({ config: cfg, forceMock: opts.mock });
+    const { UiServer } = await import('../server/server.js');
+    const server = new UiServer({ harness, port: opts.port ?? 8787, cwd: opts.cwd });
+
+    const { url } = await server.start();
+    console.log('');
+    console.log('  ╭──────────────────────────────────────────╮');
+    console.log('  │   harness-kit 工作台已启动                │');
+    console.log('  ╰──────────────────────────────────────────╯');
+    console.log(`  浏览器访问: ${url}`);
+    console.log(`  工作目录  : ${server.session.cwd}`);
+    console.log(`  provider  : ${harness.provider.name}（Ctrl+C 退出）`);
+    console.log('');
+
+    if (opts.open !== false) {
+      const { spawn } = await import('node:child_process');
+      spawn('open', [url], { stdio: 'ignore', detached: true }).unref();
+    }
+
+    const shutdown = async () => {
+      await server.stop();
+      await harness.dispose();
+      process.exit(0);
+    };
+    process.on('SIGINT', () => void shutdown());
+    process.on('SIGTERM', () => void shutdown());
+  });
+
 /* ------------------------------ helpers ---------------------------- */
 
 function oneLine(s: string): string {
