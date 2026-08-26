@@ -6,7 +6,7 @@
 
 ## 简洁版简介（一段话）
 
-**璇玑（xuanji）** 是一个从零实现的 TypeScript Agent Harness —— **可测、可控、可管的 agent harness 个人助手产品**。提供 Agent Loop / MCP / Skill 三大能力与 Codex 式 Web 工作台（SSE 流式对话、工作区隔离、工具可视化、模型切换、审批弹窗），并内置免 Key 的真实天气（IP 定位）与联网搜索。GitHub：github.com/dz2001-beep/agent-xuanji
+**璇玑（xuanji）** 是一个从零实现的 TypeScript Agent Harness —— **可测、可控、可管的 agent harness 个人助手产品**。提供 Agent Loop / MCP / Skill 三大能力与 Codex 式 Web 工作台（SSE 流式对话、工作区隔离、工具可视化、模型切换、审批弹窗），并内置免 Key 的联网搜索。GitHub：github.com/dz2001-beep/agent-xuanji
 
 ### 四项优化（做什么 → 解决什么问题）
 
@@ -38,7 +38,7 @@ TypeScript / Node.js · 官方 MCP SDK · OpenAI 兼容协议（DeepSeek/OpenAI/
 | **Agent Loop** | 循环状态机：5 种终止态（ok/max-iterations/stopped/aborted/error）、LLM 退避重试、AbortSignal 全链路取消、工具超时、参数预校验、类型化事件流 |
 | **MCP 集成** | 官方 SDK 客户端（stdio/HTTP）、多 server 命名空间、工具缓存与刷新、协议结果归一化 |
 | **Skill 技能系统** | SKILL.md 约定、递归加载、中英文相关性匹配（CJK bigram）、按请求自动注入 system prompt |
-| **Web 工作台** | SSE 流式对话、工作区隔离、工具调用可视化、模型运行时切换、真实天气/IP 定位/联网搜索（全部免 Key） |
+| **Web 工作台** | SSE 流式对话、工作区隔离、工具调用可视化、模型运行时切换、联网搜索（免 Key） |
 | **CLI 全套** | run / ui / doctor（一键自检）/ replay / trace diff 等 12 个命令 |
 
 ---
@@ -80,7 +80,7 @@ TypeScript / Node.js · 官方 MCP SDK · OpenAI 兼容协议（DeepSeek/OpenAI/
 
 - 上下文压缩实测 **token 峰值 ↓96%**
 - 代码量：约 4,500 行 TypeScript，核心循环零框架依赖
-- 12 个 CLI 命令；真实天气/定位/搜索全部免 API Key
+- 12 个 CLI 命令；联网搜索免 API Key
 
 ---
 
@@ -117,7 +117,7 @@ TypeScript / Node.js · 官方 MCP SDK · OpenAI 兼容协议（DeepSeek/OpenAI/
 > - 亮点二：**token 预算驱动上下文压缩**，长会话 token 峰值实测 ↓96%
 > - 亮点三：**参数级最小权限策略 + 人工审批流**，危险调用 fail-closed 默认拒绝
 > - 亮点四：**技能学习**，成功轨迹自动提炼为可复用技能（经验沉淀闭环）
-> - 交付 Codex 式 Web 工作台（SSE 流式/工作区隔离/模型切换/真实天气定位搜索免 Key）+ doctor 一键自检
+> - 交付 Codex 式 Web 工作台（SSE 流式/工作区隔离/模型切换/联网搜索免 Key）+ doctor 一键自检
 
 ## 简历写法参考（English）
 
@@ -128,4 +128,4 @@ TypeScript / Node.js · 官方 MCP SDK · OpenAI 兼容协议（DeepSeek/OpenAI/
 > - Highlight 2: token-budget-driven context compaction — measured −96% peak tokens on long sessions
 > - Highlight 3: parameter-level least-privilege policy engine + human approval flow — fail-closed by default
 > - Highlight 4: skill learning — successful traces auto-distilled into reusable skills (experience loop)
-> - Shipped a Codex-style web workspace (SSE streaming, workspace isolation, model switching, key-free weather/location/search) + one-command diagnostics
+> - Shipped a Codex-style web workspace (SSE streaming, workspace isolation, model switching, key-free web search) + one-command diagnostics
