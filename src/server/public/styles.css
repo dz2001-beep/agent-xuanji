@@ -724,3 +724,52 @@ body::before {
   font-weight: 500;
   margin-left: 4px;
 }
+
+/* ═══════════════════ 审批弹窗 ═══════════════════ */
+
+.approval-modal { width: min(520px, 92vw); }
+
+.approval-body { padding: 4px 2px 12px; }
+
+.approval-line {
+  font-size: 13.5px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.approval-line code {
+  font-family: var(--mono);
+  color: var(--accent);
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 6px;
+  padding: 1px 7px;
+  font-size: 12.5px;
+}
+
+.approval-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  margin: 10px 0 4px;
+}
+
+.approval-args {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  padding: 9px 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.approval-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}

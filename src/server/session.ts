@@ -14,9 +14,13 @@ import type { Harness } from '../harness/harness.js';
 /** Cap on how many history messages are replayed into the model. */
 const MAX_HISTORY = 60;
 
+/** Approval requests time out after this long (ms) and fail closed. */
+const APPROVAL_TIMEOUT_MS = 120_000;
+
 export type ChatFrame =
   | { type: 'meta'; selectedSkills: string[]; provider: string; model: string }
   | { type: 'agent'; event: AgentEvent }
+  | { type: 'approval.request'; request: import('../loop/agent.js').ApprovalRequest }
   | { type: 'done'; status: string; iterations: number; toolCalls: number; tokens: number; error?: string }
   | { type: 'error'; message: string };
 
@@ -26,10 +30,19 @@ export class ChatSession {
   private readonly harness: Harness;
   private busy = false;
   private abortController: AbortController | null = null;
+  private readonly pendingApprovals = new Map<string, (approved: boolean) => void>();
 
   constructor(harness: Harness, cwd = process.cwd()) {
     this.harness = harness;
     this.cwd = cwd;
+  }
+
+  /** Resolve a pending approval from the UI (POST /api/approval). */
+  resolveApproval(id: string, approved: boolean): boolean {
+    const resolve = this.pendingApprovals.get(id);
+    if (!resolve) return false;
+    resolve(approved);
+    return true;
   }
 
   get running(): boolean {
@@ -108,6 +121,19 @@ export class ChatSession {
       const agent = this.harness.buildAgent({
         stream: true,
         onEvent: (e) => emit({ type: 'agent', event: e }),
+        onApproval: (req) =>
+          new Promise<boolean>((resolve) => {
+            const timer = setTimeout(() => {
+              this.pendingApprovals.delete(req.id);
+              resolve(false); // fail closed on timeout
+            }, APPROVAL_TIMEOUT_MS);
+            this.pendingApprovals.set(req.id, (approved) => {
+              clearTimeout(timer);
+              this.pendingApprovals.delete(req.id);
+              resolve(approved);
+            });
+            emit({ type: 'approval.request', request: req });
+          }),
       });
 
       const result = await this.harness.run([...this.history], {
@@ -145,6 +171,9 @@ export class ChatSession {
       console.warn(`[xuanji] [session] chat error: ${message}`);
       emit({ type: 'error', message });
     } finally {
+      // Reject any outstanding approvals (fail closed) before clearing state.
+      for (const resolve of this.pendingApprovals.values()) resolve(false);
+      this.pendingApprovals.clear();
       this.busy = false;
       this.abortController = null;
     }

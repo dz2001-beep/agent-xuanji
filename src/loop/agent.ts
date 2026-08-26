@@ -26,6 +26,16 @@ import { addUsage, emptyUsage } from '../types.js';
 import { abortError, isAbortError, sleep, stringify, withTimeout } from '../utils.js';
 import { isOverBudget, compactMessages, type CompactionOptions } from './compact.js';
 import { createEmitter, type AgentEvent, type EventEmitter } from './events.js';
+import { PolicyEngine, type PolicyDecisionResult } from '../policy.js';
+
+/** A pending human-approval request (driven by a policy "ask" decision). */
+export interface ApprovalRequest {
+  id: string;
+  toolName: string;
+  args: unknown;
+  reason?: string;
+  sessionId?: string;
+}
 
 export interface AgentOptions {
   provider: ChatProvider;
@@ -43,6 +53,13 @@ export interface AgentOptions {
   stopWhen?: (state: LoopState) => boolean;
   /** Budget-driven context compaction (layer 1 trim tool results, layer 2 fold turns). */
   compaction?: CompactionOptions;
+  /** Least-privilege policy engine: allow/deny/ask per tool call + args. */
+  policy?: PolicyEngine;
+  /**
+   * Resolver for policy "ask" decisions. Resolve true to allow (once),
+   * false to deny. When absent, "ask" defaults to deny (fail closed).
+   */
+  onApproval?: (req: ApprovalRequest) => Promise<boolean>;
   onEvent?: (event: AgentEvent) => void;
 }
 
@@ -233,22 +250,13 @@ export class Agent {
         if (issues.length > 0) {
           result = { ok: false, error: `invalid arguments for "${call.name}": ${formatIssues(issues)}` };
         } else {
-          try {
-            result = await withTimeout(
-              tool.execute(call.arguments, {
-                callId: call.id,
-                sessionId: runOpts.sessionId,
-                signal: runOpts.signal,
-                cwd: runOpts.cwd,
-              }),
-              this.opts.toolTimeoutMs!,
-              `tool "${call.name}"`,
-            );
-          } catch (err) {
-            if (isAbortError(err)) throw err;
-            const error = err instanceof ToolError ? err : new Error(`tool "${call.name}" threw: ${(err as Error).message}`);
-            emitter.emit({ type: 'tool.error', name: call.name, callId: call.id, error });
-            result = { ok: false, error: error.message };
+          const policy = this.opts.policy?.decide(call.name, call.arguments);
+          if (policy?.decision === 'deny') {
+            result = { ok: false, error: `[策略拒绝] ${call.name} 被安全策略拦截${policy.reason ? `（${policy.reason}）` : ''}` };
+          } else if (policy?.decision === 'ask') {
+            result = await this.requestApproval(call, policy, runOpts);
+          } else {
+            result = await this.executeWithTimeout(call, runOpts);
           }
         }
       }
@@ -263,6 +271,45 @@ export class Agent {
         content: stringify(result.ok ? result.data : `[tool error] ${result.error}`),
       });
     }
+  }
+
+  /** Execute a tool call with the configured timeout + error recovery. */
+  private async executeWithTimeout(call: ToolCall, runOpts: RunOptions): Promise<ToolResult> {
+    try {
+      return await withTimeout(
+        this.opts.tools!.get(call.name)!.execute(call.arguments, {
+          callId: call.id,
+          sessionId: runOpts.sessionId,
+          signal: runOpts.signal,
+          cwd: runOpts.cwd,
+        }),
+        this.opts.toolTimeoutMs!,
+        `tool "${call.name}"`,
+      );
+    } catch (err) {
+      if (isAbortError(err)) throw err;
+      const error = err instanceof ToolError ? err : new Error(`tool "${call.name}" threw: ${(err as Error).message}`);
+      return { ok: false, error: error.message };
+    }
+  }
+
+  /** Resolve a policy "ask" decision through the approval callback (fail closed). */
+  private async requestApproval(call: ToolCall, policy: PolicyDecisionResult, runOpts: RunOptions): Promise<ToolResult> {
+    if (!this.opts.onApproval) {
+      return { ok: false, error: `[策略需审批] ${call.name} 需要人工确认${policy.reason ? `（${policy.reason}）` : ''}（当前环境未提供审批回调，已默认拒绝）` };
+    }
+    const req: ApprovalRequest = {
+      id: `ap_${call.id}`,
+      toolName: call.name,
+      args: call.arguments,
+      reason: policy.reason,
+      sessionId: runOpts.sessionId,
+    };
+    const approved = await this.opts.onApproval(req);
+    if (!approved) {
+      return { ok: false, error: `[策略拒绝] ${call.name} 被用户拒绝${policy.reason ? `（${policy.reason}）` : ''}` };
+    }
+    return this.executeWithTimeout(call, runOpts);
   }
 
   private finalize(

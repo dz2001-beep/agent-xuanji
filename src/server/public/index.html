@@ -114,6 +114,27 @@
     </div>
   </div>
 
+  <!-- ══════════════════ 审批弹窗 ══════════════════ -->
+  <div id="approval-modal" class="modal-mask hidden">
+    <div class="modal approval-modal">
+      <div class="modal-head">
+        <span class="modal-title">⚠ 策略审批</span>
+        <button id="approval-deny-x" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <div class="approval-body">
+        <div class="approval-line">agent 请求调用工具：<code id="approval-tool"></code></div>
+        <div class="approval-line" id="approval-reason-row" class="hidden">原因：<span id="approval-reason"></span></div>
+        <div class="approval-label">参数</div>
+        <pre id="approval-args" class="approval-args"></pre>
+      </div>
+      <div class="modal-foot">
+        <button id="approval-deny" class="btn">✖ 拒绝</button>
+        <button id="approval-allow" class="btn btn-primary">✔ 允许执行一次</button>
+      </div>
+      <div class="approval-hint">拒绝后该工具调用会以错误回馈给 agent，它不会重复执行同一调用</div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

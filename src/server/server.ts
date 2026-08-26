@@ -117,6 +117,14 @@ export class UiServer {
       this.log('info', `my city → ${city}`);
       return sendJson(res, 200, { ok: true, city: String(city) });
     }
+    if (method === 'POST' && url.pathname === '/api/approval') {
+      const { id, decision } = await readJsonBody(req);
+      const approved = decision === 'allow';
+      const resolved = this.session.resolveApproval(String(id), approved);
+      if (!resolved) return sendJson(res, 404, { error: '审批请求不存在或已超时' });
+      this.log('info', `approval ${id} → ${approved ? '允许' : '拒绝'}`);
+      return sendJson(res, 200, { ok: true });
+    }
     if (method === 'GET' && url.pathname === '/api/dirs') {
       const dir = await listDir(url.searchParams.get('path') ?? this.session.cwd);
       return sendJson(res, 200, dir);

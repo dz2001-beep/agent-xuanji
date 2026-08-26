@@ -1,0 +1,34 @@
+{
+  "rules": [
+    {
+      "id": "deny-destructive-shell",
+      "tool": "shell.*",
+      "when": { "command": { "matches": "rm -rf|git push|:(){|mkfs|dd if=" } },
+      "action": "deny",
+      "reason": "危险命令，禁止执行"
+    },
+    {
+      "id": "ask-shell",
+      "tool": "shell.*",
+      "action": "ask",
+      "reason": "执行任意 shell 命令需要确认"
+    },
+    {
+      "id": "allow-reads-in-workspace",
+      "tool": "fs.read_file",
+      "action": "allow"
+    },
+    {
+      "id": "allow-listing",
+      "tool": "fs.list_dir",
+      "action": "allow"
+    },
+    {
+      "id": "ask-writes",
+      "tool": "fs.write_file",
+      "action": "ask",
+      "reason": "写文件需要确认"
+    }
+  ],
+  "defaultAction": "allow"
+}

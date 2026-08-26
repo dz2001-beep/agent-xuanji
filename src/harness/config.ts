@@ -7,6 +7,7 @@
 import { promises as fs } from 'node:fs';
 import type { ProviderConfig } from '../llm/provider.js';
 import type { McpServerConfig } from '../mcp/config.js';
+import type { PolicyConfig } from '../policy.js';
 
 export interface SkillsConfig {
   /** Directories to scan for SKILL.md packs (recursive). */
@@ -42,6 +43,8 @@ export interface HarnessConfig {
   /** MCP servers to connect at startup. */
   mcp?: McpServerConfig[];
   budget?: BudgetConfig;
+  /** Least-privilege policy rules (allow/deny/ask per tool call + args). */
+  policy?: PolicyConfig;
   /**
    * Models offered in the web UI's model picker. Defaults to
    * [deepseek-chat, deepseek-reasoner] with the configured model guaranteed

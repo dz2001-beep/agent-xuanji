@@ -12,6 +12,7 @@
 import { Command } from 'commander';
 import { promises as fs, appendFileSync } from 'node:fs';
 import path from 'node:path';
+import { createInterface } from 'node:readline';
 import { loadDotEnv } from '../env.js';
 import { Harness } from '../harness/harness.js';
 import { loadConfigFile, type HarnessConfig } from '../harness/config.js';
@@ -101,6 +102,17 @@ program
           } else if (opts.verbose) {
             printVerboseEvent(e);
           }
+        },
+        onApproval: async (req) => {
+          console.log(`\n  ⚠ 策略审批请求：调用工具 ${req.toolName}`);
+          console.log(`    参数: ${JSON.stringify(req.args)}`);
+          if (req.reason) console.log(`    原因: ${req.reason}`);
+          if (!process.stdin.isTTY) {
+            console.log('    （非交互终端，默认拒绝）');
+            return false;
+          }
+          const answer = await askLine('    允许执行？(y=允许一次 / n=拒绝): ');
+          return answer.trim().toLowerCase() === 'y';
         },
       });
 
@@ -484,6 +496,17 @@ async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
   return Buffer.concat(chunks).toString('utf8');
+}
+
+/** Ask one question on the terminal (TTY only). */
+function askLine(prompt: string): Promise<string> {
+  return new Promise((resolve) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(prompt, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
 }
 
 function printVerboseEvent(e: import('../loop/events.js').AgentEvent): void {

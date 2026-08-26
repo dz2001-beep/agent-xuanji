@@ -19,6 +19,7 @@ import { isBuiltinGroup, registerBuiltinTools } from '../tools/builtin.js';
 import { McpRegistry } from '../mcp/registry.js';
 import { SkillRegistry } from '../skills/registry.js';
 import { renderSkills } from '../skills/skill.js';
+import { PolicyEngine } from '../policy.js';
 import type { Message } from '../types.js';
 import { Agent, type AgentOptions, type AgentResult, type RunOptions } from '../loop/agent.js';
 import { normalizeConfig, type HarnessConfig } from './config.js';
@@ -111,6 +112,7 @@ export class Harness {
             },
           }
         : {}),
+      ...(this.config.policy ? { policy: new PolicyEngine(this.config.policy) } : {}),
       ...opts,
     });
   }

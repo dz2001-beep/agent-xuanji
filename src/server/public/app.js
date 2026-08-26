@@ -33,6 +33,14 @@ const els = {
   dirInput: $('dir-input'),
   dirError: $('dir-error'),
   dirConfirm: $('dir-confirm'),
+  // approval modal
+  approvalModal: $('approval-modal'),
+  approvalTool: $('approval-tool'),
+  approvalArgs: $('approval-args'),
+  approvalReason: $('approval-reason'),
+  approvalReasonRow: $('approval-reason-row'),
+  approvalAllow: $('approval-allow'),
+  approvalDeny: $('approval-deny'),
 };
 
 const state = {
@@ -45,6 +53,7 @@ const state = {
 
 async function init() {
   bindEvents();
+  bindApprovalEvents();
   await refreshState();
   autoGrow();
 }
@@ -256,6 +265,9 @@ function handleFrame(frame) {
       break;
     case 'agent':
       handleAgentEvent(frame.event);
+      break;
+    case 'approval.request':
+      showApproval(frame.request);
       break;
     case 'done':
       finishTurn(frame);
@@ -590,6 +602,42 @@ async function saveCity(city, silent) {
     if (!silent) showBanner(`设置城市失败: ${err.message}`, true);
     // 静默恢复失败（如未配置 weather server）不打扰用户
   }
+}
+
+/* ───────────────────────── 审批流 ───────────────────────── */
+
+let currentApproval = null;
+
+function showApproval(req) {
+  currentApproval = req;
+  els.approvalTool.textContent = req.toolName;
+  els.approvalArgs.textContent = safeJson(req.args);
+  if (req.reason) {
+    els.approvalReason.textContent = req.reason;
+    els.approvalReasonRow.classList.remove('hidden');
+  } else {
+    els.approvalReasonRow.classList.add('hidden');
+  }
+  els.approvalModal.classList.remove('hidden');
+}
+
+async function resolveApproval(decision) {
+  const req = currentApproval;
+  currentApproval = null;
+  els.approvalModal.classList.add('hidden');
+  if (!req) return;
+  try {
+    await fetchJson('/api/approval', { id: req.id, decision });
+    showBanner(decision === 'allow' ? `✔ 已允许执行：${req.toolName}` : `✖ 已拒绝：${req.toolName}`);
+  } catch (err) {
+    showBanner(`审批提交失败: ${err.message}`, true);
+  }
+}
+
+function bindApprovalEvents() {
+  els.approvalAllow.addEventListener('click', () => void resolveApproval('allow'));
+  els.approvalDeny.addEventListener('click', () => void resolveApproval('deny'));
+  $('approval-deny-x').addEventListener('click', () => void resolveApproval('deny'));
 }
 
 function scrollToBottom() {
