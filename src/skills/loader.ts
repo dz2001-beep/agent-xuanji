@@ -25,7 +25,7 @@ async function walk(root: string, current: string, out: Skill[]): Promise<void> 
   try {
     entries = await fs.readdir(current, { withFileTypes: true });
   } catch (err) {
-    console.warn(`[harness-kit] cannot read skill directory ${current}: ${(err as Error).message}`);
+    console.warn(`[xuanji] cannot read skill directory ${current}: ${(err as Error).message}`);
     return;
   }
 
@@ -58,7 +58,7 @@ async function readSkill(root: string, skillDir: string): Promise<Skill | null> 
       metadata: meta,
     };
   } catch (err) {
-    console.warn(`[harness-kit] skipping broken skill at ${file}: ${(err as Error).message}`);
+    console.warn(`[xuanji] skipping broken skill at ${file}: ${(err as Error).message}`);
     return null;
   }
 }

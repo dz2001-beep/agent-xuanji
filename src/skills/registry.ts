@@ -22,7 +22,7 @@ export class SkillRegistry {
     let added = 0;
     for (const skill of found) {
       if (this.skills.has(skill.name)) {
-        console.warn(`[harness-kit] skill "${skill.name}" already registered — keeping existing`);
+        console.warn(`[xuanji] skill "${skill.name}" already registered — keeping existing`);
         continue;
       }
       this.skills.set(skill.name, skill);

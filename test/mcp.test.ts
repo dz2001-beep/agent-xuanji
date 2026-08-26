@@ -1,19 +1,24 @@
 /**
- * MCP integration tests — link the demo server in-memory (no subprocess),
+ * MCP integration tests — link the weather server in-memory (no subprocess),
  * exercising the real protocol client code path.
+ *
+ * The server talks to real (key-free) APIs — open-meteo / ip-api — when the
+ * network allows, and falls back to bundled demo data otherwise. Assertions
+ * therefore check structure (fields present, numeric values), not exact
+ * values.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { McpRegistry } from '../src/mcp/registry.js';
-import { createDemoServer } from '../examples/mcp-servers/weather-server.js';
+import { createWeatherServer } from '../examples/mcp-servers/weather-server.js';
 
 describe('McpRegistry (in-memory link)', () => {
   let registry: McpRegistry;
   let serverTransport: InMemoryTransport;
 
   beforeAll(async () => {
-    const server = createDemoServer();
+    const server = createWeatherServer();
     const [clientTransport, serverTransportPair] = InMemoryTransport.createLinkedPair();
     serverTransport = serverTransportPair;
     await server.connect(serverTransport);
@@ -29,23 +34,51 @@ describe('McpRegistry (in-memory link)', () => {
 
   it('lists tools from the server', () => {
     const handle = registry.get('weather')!;
-    expect(handle.serverInfo).toContain('harness-kit-demo-server');
+    expect(handle.serverInfo).toContain('xuanji-demo-server');
     const names = handle.tools.map((t) => t.name).sort();
-    expect(names).toEqual(['current', 'time']);
+    expect(names).toEqual(['current', 'geo.city', 'time']);
   });
 
   it('adapts MCP tools with namespaced harness names', () => {
     const tools = registry.toTools();
-    expect(tools.map((t) => t.name).sort()).toEqual(['weather.current', 'weather.time']);
+    expect(tools.map((t) => t.name).sort()).toEqual(['weather.current', 'weather.geo.city', 'weather.time']);
     const current = tools.find((t) => t.name === 'weather.current')!;
-    expect(current.description).toContain('weather');
-    expect(current.inputSchema.required).toEqual(['city']);
+    expect(current.description).toContain('天气');
+    // city is now optional (auto IP location)
+    expect(current.inputSchema.required).toEqual([]);
   });
 
-  it('calls a tool by namespaced name and maps text content', async () => {
+  it('calls weather.current with an explicit city (real or demo-fallback data)', async () => {
     const res = await registry.callTool('weather.current', { city: '北京' });
     expect(res.ok).toBe(true);
-    expect(JSON.parse((res as { ok: true; data: string }).data)).toMatchObject({ city: '北京', temp: 24 });
+    const data = JSON.parse((res as { ok: true; data: string }).data) as {
+      city: string;
+      temp: number;
+      condition: string;
+      humidity: number;
+    };
+    expect(data.city).toBeTruthy();
+    expect(typeof data.temp).toBe('number');
+    expect(typeof data.condition).toBe('string');
+  });
+
+  it('weather.current without a city auto-detects the location (IP)', async () => {
+    const res = await registry.callTool('weather.current', {});
+    expect(res.ok).toBe(true);
+    const data = JSON.parse((res as { ok: true; data: string }).data) as { city: string; temp: number };
+    expect(data.city).toBeTruthy();
+    expect(typeof data.temp).toBe('number');
+  });
+
+  it('geo.city reports a detected city when the network allows', async () => {
+    const res = await registry.callTool('weather.geo.city', {});
+    // Network-dependent: either a real location (ok) or an explicit failure.
+    if (res.ok) {
+      const data = JSON.parse((res as { ok: true; data: string }).data) as { city?: string };
+      expect(data.city).toBeTruthy();
+    } else {
+      expect((res as { ok: false; error: string }).error).toBeTruthy();
+    }
   });
 
   it('executes an adapted Tool (execute → server round-trip)', async () => {
@@ -57,9 +90,9 @@ describe('McpRegistry (in-memory link)', () => {
   });
 
   it('maps server errors to ok:false ToolResults', async () => {
-    const res = await registry.callTool('weather.current', { city: 'atlantis' });
+    const res = await registry.callTool('weather.time', { timezone: 'Not/AZone' });
     expect(res.ok).toBe(false);
-    expect((res as { ok: false; error: string }).error).toContain('unknown city');
+    expect((res as { ok: false; error: string }).error).toBeTruthy();
   });
 
   it('reports unknown servers / unknown namespaced names', async () => {
@@ -70,7 +103,7 @@ describe('McpRegistry (in-memory link)', () => {
 
   it('refresh() re-lists tools without dropping the connection', async () => {
     await expect(registry.refresh()).resolves.toBeUndefined();
-    expect(registry.get('weather')!.tools).toHaveLength(2);
+    expect(registry.get('weather')!.tools).toHaveLength(3);
   });
 
   it('attach() rejects duplicate server ids', async () => {

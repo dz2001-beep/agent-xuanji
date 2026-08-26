@@ -67,7 +67,7 @@ Step by step.
 describe('loadSkills', () => {
   let root: string;
   beforeAll(async () => {
-    root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-kit-skills-'));
+    root = await fs.mkdtemp(path.join(os.tmpdir(), 'xuanji-skills-'));
     // two valid skills
     await fs.mkdir(path.join(root, 'alpha'), { recursive: true });
     await fs.writeFile(

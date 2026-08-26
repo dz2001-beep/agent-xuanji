@@ -1,12 +1,12 @@
 {
-  "name": "harness-kit",
+  "name": "xuanji",
   "version": "0.1.0",
   "description": "A lightweight, extensible agent harness: Agent Loop + MCP + Skill system, provider-agnostic (OpenAI-compatible).",
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "bin": {
-    "harness-kit": "./dist/src/cli/index.js"
+    "xuanji": "./dist/src/cli/index.js"
   },
   "files": [
     "dist/src",

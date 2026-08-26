@@ -1,5 +1,5 @@
 /**
- * Diagnostics for `harness-kit doctor` — answers the "why doesn't the model
+ * Diagnostics for `xuanji doctor` — answers the "why doesn't the model
  * call work?" question in one command:
  *   1. where the API key comes from (and whether it looks valid);
  *   2. whether a minimal model call succeeds (key valid? model name valid?

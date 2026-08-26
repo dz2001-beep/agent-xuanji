@@ -1,5 +1,5 @@
 /**
- * End-to-end demo for harness-kit.
+ * End-to-end demo for xuanji.
  *
  * Runs an agent that:
  *  1. auto-selects relevant skills for the request (skill system);
@@ -92,7 +92,7 @@ export async function runDemo(): Promise<void> {
 
   try {
     console.log('═══════════════════════════════════════════════════════════');
-    console.log('  harness-kit demo');
+    console.log('  璇玑（xuanji）demo');
     console.log(`  provider : ${mock ? 'mock（离线演示，设 OPENAI_API_KEY/DEEPSEEK_API_KEY 体验真实模型）' : `openai-compatible (${provider?.name ?? 'custom'})`}`);
     const selected = harness.skills.select(PROMPT, { top: 2 });
     if (selected.length > 0) {

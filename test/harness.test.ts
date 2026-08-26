@@ -14,7 +14,7 @@ import { MockProvider } from '../src/llm/mock.js';
 describe('config', () => {
   it('normalizes defaults', () => {
     const cfg = normalizeConfig({ provider: { type: 'mock', model: 'm' } });
-    expect(cfg.tools).toEqual(['fs', 'shell']);
+    expect(cfg.tools).toEqual(['fs', 'shell', 'web']);
     expect(cfg.skills.autoSelect).toBe(true);
     expect(cfg.skills.maxSelected).toBe(2);
     expect(cfg.mcp).toEqual([]);
@@ -25,7 +25,7 @@ describe('config', () => {
   });
 
   it('loads a JSON config file', async () => {
-    const file = path.join(os.tmpdir(), `harness-kit-config-${Date.now()}.json`);
+    const file = path.join(os.tmpdir(), `xuanji-config-${Date.now()}.json`);
     await fs.writeFile(file, JSON.stringify({ provider: { type: 'mock', model: 'm' }, tools: ['fs'] }));
     try {
       const cfg = await loadConfigFile(file);
@@ -40,7 +40,7 @@ describe('config', () => {
 describe('Harness', () => {
   let skillsDir: string;
   beforeAll(async () => {
-    skillsDir = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-kit-harness-'));
+    skillsDir = await fs.mkdtemp(path.join(os.tmpdir(), 'xuanji-harness-'));
     const dir = path.join(skillsDir, 'code-review');
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(

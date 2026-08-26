@@ -39,7 +39,7 @@ export function createEmitter(): EventEmitter {
           handler(event);
         } catch (err) {
           // An observer must never break the loop.
-          console.warn(`[harness-kit] event handler threw:`, err);
+          console.warn(`[xuanji] event handler threw:`, err);
         }
       }
     },

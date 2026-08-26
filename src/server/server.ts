@@ -1,5 +1,5 @@
 /**
- * UiServer — local HTTP server for the harness-kit web client.
+ * UiServer — local HTTP server for the xuanji web client.
  *
  * Binds to 127.0.0.1 only (local tooling; no auth by design). Serves the
  * static web UI from `public/` and exposes a small JSON/SSE API:

@@ -176,7 +176,7 @@ export class Agent {
         lastError = err;
         const detail = err instanceof Error ? err.message : String(err);
         console.warn(
-          `[harness-kit] [loop] provider call failed (attempt ${attempt + 1}/${maxRetries + 1}): ${detail}`,
+          `[xuanji] [loop] provider call failed (attempt ${attempt + 1}/${maxRetries + 1}): ${detail}`,
         );
       }
     }

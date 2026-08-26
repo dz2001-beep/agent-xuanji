@@ -1,5 +1,5 @@
 /**
- * harness-kit — a lightweight, extensible agent harness.
+ * xuanji — a lightweight, extensible agent harness.
  *
  * Public API surface:
  *  - Agent Loop:      Agent, AgentResult, AgentEvent, RunOptions

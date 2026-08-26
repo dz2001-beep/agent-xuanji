@@ -53,7 +53,7 @@ describe('UiServer', () => {
   it('serves the web UI', async () => {
     const res = await fetch(`${base}/`);
     expect(res.status).toBe(200);
-    expect((await res.text()).includes('harness-kit 工作台')).toBe(true);
+    expect((await res.text()).includes('xuanji 工作台')).toBe(true);
   });
 
   it('exposes health', async () => {

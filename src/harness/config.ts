@@ -52,7 +52,7 @@ export const DEFAULT_SKILLS: SkillsConfig = {
 };
 
 const DEFAULTS: Partial<HarnessConfig> = {
-  tools: ['fs', 'shell'],
+  tools: ['fs', 'shell', 'web'],
   skills: DEFAULT_SKILLS,
   mcp: [],
   budget: {},

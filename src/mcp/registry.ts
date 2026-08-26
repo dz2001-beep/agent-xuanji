@@ -109,7 +109,7 @@ export class McpRegistry {
     validateMcpConfig(cfg);
     if (this.handles.has(cfg.id)) return this.handles.get(cfg.id)!;
 
-    const client = new Client({ name: 'harness-kit', version: VERSION });
+    const client = new Client({ name: 'xuanji', version: VERSION });
     const transport = buildTransport(cfg);
     await client.connect(transport);
 
@@ -124,7 +124,7 @@ export class McpRegistry {
    * Attach a client to an already-created transport (in-memory links in
    * tests, custom transports, …). Transport ownership is the caller's.
    */
-  async attach(id: string, transport: Transport, clientName = 'harness-kit'): Promise<McpHandle> {
+  async attach(id: string, transport: Transport, clientName = 'xuanji'): Promise<McpHandle> {
     if (this.handles.has(id)) throw new Error(`MCP server "${id}" is already connected`);
     const client = new Client({ name: clientName, version: VERSION });
     await client.connect(transport);

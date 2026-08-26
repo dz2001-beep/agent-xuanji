@@ -4,7 +4,7 @@
     "model": "deepseek-chat"
   },
   "models": ["deepseek-v4-flash", "deepseek-chat", "deepseek-reasoner"],
-  "tools": ["fs", "shell"],
+  "tools": ["fs", "shell", "web"],
   "skills": {
     "dirs": ["./examples/skills"],
     "autoSelect": true,

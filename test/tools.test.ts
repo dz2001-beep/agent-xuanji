@@ -82,7 +82,7 @@ describe('built-in tools', () => {
 
   let tmp: string;
   beforeAll(async () => {
-    tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-kit-tools-'));
+    tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'xuanji-tools-'));
   });
   afterAll(async () => {
     await fs.rm(tmp, { recursive: true, force: true });

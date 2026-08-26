@@ -67,7 +67,7 @@ export class Harness {
     // Built-in tools
     const groups = cfg.tools.filter((t) => isBuiltinGroup(t));
     const unknown = cfg.tools.filter((t) => !isBuiltinGroup(t));
-    for (const g of unknown) console.warn(`[harness-kit] unknown builtin tool group "${g}" (known: fs, shell)`);
+    for (const g of unknown) console.warn(`[xuanji] unknown builtin tool group "${g}" (known: fs, shell)`);
     registerBuiltinTools(harness.tools, groups);
 
     // MCP servers → adapted, namespaced tools
@@ -75,16 +75,16 @@ export class Harness {
       try {
         const handle = await harness.mcp.connect(server);
         harness.tools.registerMany(harness.mcp.toTools().filter((t) => t.name.startsWith(`${handle.id}.`)));
-        console.log(`[harness-kit] MCP connected: ${handle.id} (${handle.serverInfo}, ${handle.tools.length} tools)`);
+        console.log(`[xuanji] MCP connected: ${handle.id} (${handle.serverInfo}, ${handle.tools.length} tools)`);
       } catch (err) {
-        console.error(`[harness-kit] failed to connect MCP server "${server.id}": ${(err as Error).message}`);
+        console.error(`[xuanji] failed to connect MCP server "${server.id}": ${(err as Error).message}`);
       }
     }
 
     // Skills
     for (const dir of cfg.skills.dirs) {
       const n = await harness.skills.loadDir(dir);
-      console.log(`[harness-kit] skills loaded from ${dir}: ${n}`);
+      console.log(`[xuanji] skills loaded from ${dir}: ${n}`);
     }
 
     return harness;

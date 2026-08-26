@@ -13,9 +13,9 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { Tool, ToolContext, ToolResult, toolError, toolResult } from './tool.js';
 
-export type BuiltinGroup = 'fs' | 'shell';
+export type BuiltinGroup = 'fs' | 'shell' | 'web';
 
-export const BUILTIN_GROUPS: BuiltinGroup[] = ['fs', 'shell'];
+export const BUILTIN_GROUPS: BuiltinGroup[] = ['fs', 'shell', 'web'];
 
 export function isBuiltinGroup(v: string): v is BuiltinGroup {
   return (BUILTIN_GROUPS as string[]).includes(v);
@@ -179,9 +179,97 @@ const shellTool: Tool = {
 };
 
 /* ------------------------------------------------------------------ */
+/* web tools                                                           */
+/* ------------------------------------------------------------------ */
+
+export interface BingResult {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+/**
+ * Parse Bing search-result HTML (cn.bing.com, reachable in CN networks
+ * without an API key). Extracts `b_algo` blocks: title, link, snippet.
+ * Deliberately regex-based (no HTML parser dependency) — best effort.
+ */
+export function parseBingResults(html: string, max = 8): BingResult[] {
+  const out: BingResult[] = [];
+  const blocks = html.match(/<li class="b_algo"[\s\S]*?<\/li>/g) ?? [];
+  for (const block of blocks) {
+    const h2 = block.match(/<h2[^>]*><a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a><\/h2>/);
+    const url = h2?.[1];
+    const title = stripTags(h2?.[2] ?? '');
+    const p = block.match(/<p[^>]*>([\s\S]*?)<\/p>/);
+    const snippet = stripTags(p?.[1] ?? '');
+    if (title && url && url.startsWith('http')) {
+      out.push({ title, url, snippet });
+      if (out.length >= max) break;
+    }
+  }
+  return out;
+}
+
+function stripTags(s: string): string {
+  return s
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const BING_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
+
+async function runBingSearch(query: string, maxResults: number, lang: string): Promise<ToolResult> {
+  const target = `https://cn.bing.com/search?q=${encodeURIComponent(query)}&setlang=${lang}`;
+  try {
+    const res = await fetch(target, {
+      headers: { 'User-Agent': BING_UA, 'Accept-Language': lang === 'en-US' ? 'en-US,en' : 'zh-CN,zh' },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return toolError(`web.search 请求失败: HTTP ${res.status}`);
+    const html = await res.text();
+    const results = parseBingResults(html, maxResults);
+    if (results.length === 0) return toolResult({ query, results: [], note: '未找到结果（页面结构或网络受限）' });
+    return toolResult({ query, results });
+  } catch (err) {
+    return toolError(`web.search 失败（网络不可达？）: ${(err as Error).message}`);
+  }
+}
+
+const webSearchTool: Tool = {
+  name: 'web.search',
+  description:
+    '搜索互联网（基于必应中文搜索，无需 API Key）。返回前 N 条结果的标题、链接与摘要。适合查询新闻、事实、文档、最新信息。',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: '搜索关键词（中文或英文）' },
+      maxResults: { type: 'integer', description: '返回结果条数（默认 5，最大 10）' },
+      lang: { type: 'string', enum: ['zh-CN', 'en-US'], description: '搜索语言区域（默认 zh-CN）' },
+    },
+    required: ['query'],
+  },
+  execute: async (input) => {
+    const { query, maxResults = 5, lang = 'zh-CN' } = (input ?? {}) as {
+      query: string;
+      maxResults?: number;
+      lang?: string;
+    };
+    return runBingSearch(query, Math.min(Math.max(maxResults, 1), 10), lang);
+  },
+};
+
+/* ------------------------------------------------------------------ */
 
 export function registerBuiltinTools(registry: { register(tool: Tool): void }, groups: string[]): void {
   const enabled = new Set(groups);
   if (enabled.has('fs')) for (const t of fsTools) registry.register(t);
   if (enabled.has('shell')) registry.register(shellTool);
+  if (enabled.has('web')) registry.register(webSearchTool);
 }

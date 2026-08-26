@@ -1,4 +1,4 @@
-# harness-kit
+# 璇玑（xuanji）
 
 > **一个轻量、可扩展、Provider 无关的 Agent Harness** —— 把 **Agent Loop（代理循环）**、**MCP（模型上下文协议）**、**Skill（技能系统）** 组合成一个带**完整工作台**的 agent 运行时，像 Codex 一样在浏览器里对话、选工作区、看它一步步调工具干活。
 
@@ -11,7 +11,7 @@
 
 ## 🖥 界面一览
 
-![harness-kit 工作台](docs/ui-preview.svg)
+![xuanji 工作台](docs/ui-preview.svg)
 
 `npm run ui` 启动即得：**侧边栏**（工作区 / 运行环境 / 工具 / 技能）+ **主区**（流式对话、工具调用卡片、技能注入提示、模型切换）+ 底部输入区。
 
@@ -42,7 +42,7 @@ harness 是"agent 的操作系统"—— 它不负责模型本身，而是解决
 - 完整返回：最终回答 + 全程对话记录 + token 统计
 
 ### 工具系统（`src/tools/`）
-- **内置工具**：`fs.read_file` / `fs.write_file` / `fs.list_dir` / `shell.run`（超时击杀，输出截断）
+- **内置工具**：`fs.read_file` / `fs.write_file` / `fs.list_dir` / `shell.run`（超时击杀，输出截断）/ **`web.search`**（基于必应中文搜索，无需 API Key，返回标题/链接/摘要）
 - **自定义工具**：实现 `Tool` 接口（name / description / schema / execute）即插即用
 - 相对路径与 shell 默认 cwd 全部锚定**当前工作区**
 
@@ -50,7 +50,11 @@ harness 是"agent 的操作系统"—— 它不负责模型本身，而是解决
 - 官方 MCP SDK，支持 `stdio`（本地子进程）与 `streamable-http`（远程）两种传输
 - 多 server 注册表，工具命名空间 `<serverId>.<toolName>` 防重名（如 `weather.current`）
 - 工具列表缓存 + 按需 `refresh()`；协议结果（`content[]`/`isError`/`structuredContent`）统一归一化
-- 自带 demo server（天气 + 时间），测试走 in-memory 真实协议链路
+- **自带真实天气 server**（无需 API Key）：
+  - `weather.current(city?)` —— **open-meteo 真实天气**（温度/状况/湿度/风速）；不传城市时**自动 IP 定位**（ip-api.com），问"天气怎么样"就知道你在哪个城市
+  - `geo.city` —— IP 定位当前城市/省份/国家/经纬度
+  - 网络不可达时自动降级内置演示数据，不打断 agent
+  - 测试走 in-memory 真实协议链路
 
 ### Skill 技能系统（`src/skills/`）
 - **SKILL.md 约定**：目录即技能，frontmatter（name/description）+ 指令正文
@@ -179,14 +183,14 @@ const result = await harness.run('查一下北京天气，然后 review 一下 s
 ## ⌨️ CLI 参考
 
 ```bash
-harness-kit run "prompt..."       # 命令行对话（流式输出；无 prompt 读 stdin）
-harness-kit run --mock "hi"       # 离线模式
-harness-kit ui                    # 启动工作台（-p 端口 / --no-open / --log-file）
-harness-kit doctor                # 一键自检：Key / 模型 / 工具名 / 工作区
-harness-kit mcp list              # 列出配置中 MCP server 的工具
-harness-kit skills list           # 列出已加载技能
-harness-kit skills show <name>    # 查看某个技能的完整指令
-harness-kit demo                  # 端到端演示（无 Key 自动 mock）
+xuanji run "prompt..."       # 命令行对话（流式输出；无 prompt 读 stdin）
+xuanji run --mock "hi"       # 离线模式
+xuanji ui                    # 启动工作台（-p 端口 / --no-open / --log-file）
+xuanji doctor                # 一键自检：Key / 模型 / 工具名 / 工作区
+xuanji mcp list              # 列出配置中 MCP server 的工具
+xuanji skills list           # 列出已加载技能
+xuanji skills show <name>    # 查看某个技能的完整指令
+xuanji demo                  # 端到端演示（无 Key 自动 mock）
 ```
 
 ---
@@ -199,7 +203,7 @@ harness-kit demo                  # 端到端演示（无 Key 自动 mock）
 {
   "provider": { "type": "openai", "model": "deepseek-chat" },
   "models": ["deepseek-v4-flash", "deepseek-chat", "deepseek-reasoner"],
-  "tools": ["fs", "shell"],
+  "tools": ["fs", "shell", "web"],
   "skills": { "dirs": ["./examples/skills"], "autoSelect": true, "maxSelected": 2 },
   "mcp": [
     { "id": "weather", "transport": "stdio", "command": "node", "args": ["dist/examples/mcp-servers/weather-server.js"] }

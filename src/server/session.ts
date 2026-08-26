@@ -116,7 +116,7 @@ export class ChatSession {
       // UI shows *why* instead of a bare "error" line.
       const runError = result.status !== 'ok' ? (result.error?.message ?? `run ended with status "${result.status}"`) : undefined;
       if (runError) {
-        console.warn(`[harness-kit] [session] run failed (${result.status}): ${runError}`);
+        console.warn(`[xuanji] [session] run failed (${result.status}): ${runError}`);
       }
 
       emit({
@@ -130,7 +130,7 @@ export class ChatSession {
     } catch (err) {
       const name = err instanceof Error ? err.name : '';
       const message = name === 'AbortError' ? '已停止' : (err as Error).message;
-      console.warn(`[harness-kit] [session] chat error: ${message}`);
+      console.warn(`[xuanji] [session] chat error: ${message}`);
       emit({ type: 'error', message });
     } finally {
       this.busy = false;

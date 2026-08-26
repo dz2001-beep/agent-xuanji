@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * harness-kit CLI
+ * xuanji CLI
  *
- *   harness-kit run "prompt..."      run an agent (config or flags)
- *   harness-kit mcp list             connect configured MCP servers and list tools
- *   harness-kit skills list          list skills from configured directories
- *   harness-kit skills show <name>   show one skill's instructions
- *   harness-kit demo                 run the bundled end-to-end demo
+ *   xuanji run "prompt..."      run an agent (config or flags)
+ *   xuanji mcp list             connect configured MCP servers and list tools
+ *   xuanji skills list          list skills from configured directories
+ *   xuanji skills show <name>   show one skill's instructions
+ *   xuanji demo                 run the bundled end-to-end demo
  */
 
 import { Command } from 'commander';
@@ -48,7 +48,7 @@ async function resolveConfig(opts: CliOptions): Promise<HarnessConfig> {
 
 const program = new Command();
 program
-  .name('harness-kit')
+  .name('xuanji')
   .description('A lightweight agent harness: Agent Loop + MCP + Skills')
   .version('0.1.0');
 
@@ -67,7 +67,7 @@ program
   .action(async (promptWords: string[], opts: CliOptions & { maxIterations?: number }) => {
     let prompt = promptWords.join(' ');
     if (!prompt && process.stdin.isTTY) {
-      console.error('harness-kit: no prompt given; pass one or pipe text via stdin');
+      console.error('xuanji: no prompt given; pass one or pipe text via stdin');
       process.exit(1);
     }
     if (!prompt) {
@@ -78,7 +78,7 @@ program
     if (opts.maxIterations) cfg.budget = { ...cfg.budget, maxIterations: opts.maxIterations };
 
     const harness = await Harness.create({ config: cfg, forceMock: opts.mock }).catch((err: Error) => {
-      console.error(`[harness-kit] 启动失败: ${err.message}`);
+      console.error(`[xuanji] 启动失败: ${err.message}`);
       if (err.message.includes('API key')) {
         console.error('  提示: 设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY 后重试；离线体验可加 --mock');
       }
@@ -108,11 +108,11 @@ program
 
       process.stdout.write('\n\n');
       if (result.status !== 'ok') {
-        console.error(`[harness-kit] run finished with status "${result.status}"`);
-        if (result.error) console.error(`[harness-kit] error: ${result.error.message}`);
+        console.error(`[xuanji] run finished with status "${result.status}"`);
+        if (result.error) console.error(`[xuanji] error: ${result.error.message}`);
       }
       console.log(
-        `[harness-kit] iterations=${result.iterations} toolCalls=${result.toolCalls} ` +
+        `[xuanji] iterations=${result.iterations} toolCalls=${result.toolCalls} ` +
           `tokens=${result.usage.totalTokens} status=${result.status}`,
       );
     } finally {
@@ -243,7 +243,7 @@ program
       }
 
       const harness = await Harness.create({ config: cfg, forceMock: effectiveMock }).catch((err: Error) => {
-        console.error(`[harness-kit] 启动失败: ${err.message}`);
+        console.error(`[xuanji] 启动失败: ${err.message}`);
         if (err.message.includes('API key')) {
           console.error('  提示: 设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY 后重试；离线体验可加 --mock');
         }
@@ -262,9 +262,9 @@ program
 
       const { url } = await server.start().catch((err: Error & { code?: string }) => {
         if (err.code === 'EADDRINUSE') {
-          console.error(`[harness-kit] 端口 ${opts.port ?? 8787} 已被占用，换一个端口：--port 9000`);
+          console.error(`[xuanji] 端口 ${opts.port ?? 8787} 已被占用，换一个端口：--port 9000`);
         } else {
-          console.error(`[harness-kit] 服务启动失败: ${err.message}`);
+          console.error(`[xuanji] 服务启动失败: ${err.message}`);
         }
         void harness.dispose();
         process.exit(1);
@@ -280,7 +280,7 @@ program
 
       console.log('');
       console.log('  ╭──────────────────────────────────────────╮');
-      console.log('  │   harness-kit 工作台已启动                │');
+      console.log('  │   璇玑（xuanji）工作台已启动        │');
       console.log('  ╰──────────────────────────────────────────╯');
       console.log(`  浏览器访问 : ${url}`);
       console.log(`  工作区     : ${server.session.cwd}（agent 生成内容都在这里，与产品代码隔离）`);
@@ -323,7 +323,7 @@ program
     const cfg = await resolveConfig(opts as CliOptions);
     if (opts.model) cfg.provider.model = opts.model;
 
-    console.log('\n  ═══ harness-kit doctor ═══\n');
+    console.log('\n  ═══ xuanji doctor ═══\n');
 
     // [1] API key
     const key = detectKey(cfg);
@@ -404,7 +404,7 @@ function createUiLogger(logFile?: string): UiLogger {
       try {
         appendFileSync(logFile, `${line}\n`);
       } catch (err) {
-        console.warn(`  [harness-kit] 无法写入日志文件 ${logFile}: ${(err as Error).message}`);
+        console.warn(`  [xuanji] 无法写入日志文件 ${logFile}: ${(err as Error).message}`);
       }
     }
   };
