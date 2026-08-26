@@ -1,0 +1,57 @@
+{
+  "name": "harness-kit",
+  "version": "0.1.0",
+  "description": "A lightweight, extensible agent harness: Agent Loop + MCP + Skill system, provider-agnostic (OpenAI-compatible).",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "bin": {
+    "harness-kit": "./dist/src/cli/index.js"
+  },
+  "files": [
+    "dist/src",
+    "dist/examples"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo": "npm run build && node dist/examples/demo.js",
+    "dev": "tsx src/cli/index.ts",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "agent",
+    "harness",
+    "mcp",
+    "model-context-protocol",
+    "llm",
+    "skills",
+    "tool-calling",
+    "ai"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "commander": "^12.1.0",
+    "js-yaml": "^4.1.0",
+    "openai": "^4.86.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
