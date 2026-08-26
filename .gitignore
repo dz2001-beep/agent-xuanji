@@ -5,3 +5,4 @@ dist/
 .DS_Store
 .env
 harness.config.json
+xuanji.config.json

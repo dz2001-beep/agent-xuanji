@@ -4,8 +4,9 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/Node-%E2%89%A520-339933)](https://nodejs.org/)
-[![Tests](https://img.shields.io/badge/tests-90%20passing-22d3ee)](https://github.com/)
+[![Tests](https://img.shields.io/badge/tests-98%20passing-22d3ee)](https://github.com/dz2001-beep/agent-xuanji)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+[![GitHub](https://img.shields.io/badge/GitHub-agent--xuanji-22d3ee)](https://github.com/dz2001-beep/agent-xuanji)
 
 ---
 
