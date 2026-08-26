@@ -64,6 +64,7 @@ harness 是"agent 的操作系统"—— 它不负责模型本身，而是解决
 - **SKILL.md 约定**：目录即技能，frontmatter（name/description）+ 指令正文
 - 递归加载，坏文件跳过不阻断；**相关性匹配**零依赖（ASCII 词 + CJK 字符 bigram，中英文查询都可用）
 - **自动注入**：运行时按用户请求选 Top-K 技能注入 system prompt，不常驻、省 token
+- **技能学习（经验沉淀闭环）**：`xuanji skill learn` 把成功运行的轨迹自动提炼为 SKILL.md —— 多条同类轨迹合并时按"高频步骤加权"（2/2 vs 1/2），跑成功 → 沉淀 → 下次同类任务自动复用
 - 内置 3 个示例技能：`code-review`（分级代码评审）/ `commit-message`（Conventional Commits）/ `sqlite-query`
 
 ### Provider（`src/llm/`）
@@ -194,6 +195,7 @@ xuanji doctor                # 一键自检：Key / 模型 / 工具名 / 工作�
 xuanji run --trace run.jsonl "问题"   # 运行并记录可重放的 JSONL 轨迹
 xuanji replay run.jsonl       # 离线重放轨迹（不调模型）：校验事件顺序 + 统计
 xuanji trace diff golden.jsonl actual.jsonl  # 黄金轨迹比对（agent 回归测试）
+xuanji skill learn --dir traces/ --name code-review -o skills/code-review/SKILL.md  # 成功轨迹 → 可复用技能
 xuanji mcp list              # 列出配置中 MCP server 的工具
 xuanji skills list           # 列出已加载技能
 xuanji skills show <name>    # 查看某个技能的完整指令

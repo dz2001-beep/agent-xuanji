@@ -360,6 +360,66 @@ program
     console.log('  ═══════════════════════════════════\n');
   });
 
+/* --------------------------- skill learn --------------------------- */
+
+program
+  .command('skill')
+  .description('Skill tooling: learn — distill successful traces into a reusable SKILL.md')
+  .argument('<action>', 'action: learn')
+  .argument('[trace...]', 'one or more JSONL trace files (from run --trace)')
+  .option('--dir <dir>', 'instead of explicit files: load every *.jsonl under this directory')
+  .option('--name <name>', 'skill name (required)')
+  .option('--description <desc>', 'skill description (used for relevance matching)')
+  .option('-o, --out <path>', 'write SKILL.md to this path (default: print to stdout)')
+  .action(
+    async (
+      action: string,
+      traceArgs: string[],
+      opts: { dir?: string; name?: string; description?: string; out?: string },
+    ) => {
+      if (action !== 'learn') {
+        console.error(`xuanji: 未知 action "${action}"（支持 learn）`);
+        process.exit(1);
+      }
+      if (!opts.name?.trim()) {
+        console.error('xuanji: 需要 --name 指定技能名（如 --name "code-review"）');
+        process.exit(1);
+      }
+      const { TraceRecorder } = await import('../trace.js');
+      const { mergeTraces, renderSkillMd, loadTracesFromDir } = await import('../skilllearn.js');
+
+      let traces = [];
+      if (opts.dir) {
+        traces = await loadTracesFromDir(opts.dir, (f) => TraceRecorder.load(f));
+        console.log(`[xuanji] 从 ${opts.dir} 加载 ${traces.length} 条轨迹`);
+      } else {
+        if (traceArgs.length === 0) {
+          console.error('xuanji: 请提供轨迹文件（或 --dir <目录>）');
+          process.exit(1);
+        }
+        for (const f of traceArgs) traces.push(await TraceRecorder.load(f));
+      }
+
+      const learned = mergeTraces(traces, { name: opts.name, description: opts.description });
+      if (!learned) {
+        console.error(`xuanji: 没有成功运行的轨迹可提炼（需 status=ok）`);
+        process.exit(1);
+      }
+
+      const md = renderSkillMd(learned);
+      if (opts.out) {
+        const { promises: fs } = await import('node:fs');
+        await fs.mkdir(opts.out.split('/').slice(0, -1).join('/'), { recursive: true });
+        await fs.writeFile(opts.out, md, 'utf8');
+        console.log(`[xuanji] 已提炼技能 → ${opts.out}`);
+        console.log(`  步骤: ${learned.steps.map((s) => `${s.name}(${s.count}/${learned.totalRuns})`).join(', ')}`);
+        console.log(`  轨迹: ${learned.traceIds.join(', ')}`);
+      } else {
+        console.log(md);
+      }
+    },
+  );
+
 /* ------------------------------- trace ----------------------------- */
 
 program
