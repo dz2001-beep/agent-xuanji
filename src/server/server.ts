@@ -133,6 +133,14 @@ export class UiServer {
     });
 
     const emit = (frame: unknown): void => {
+      if ((frame as { type?: string }).type === 'done') {
+        const done = frame as { status: string; error?: string };
+        if (done.status !== 'ok') {
+          this.log('error', `run ended with status "${done.status}"${done.error ? `: ${done.error}` : ''}`);
+        } else {
+          this.log('info', `run ok (${(frame as { toolCalls?: number }).toolCalls ?? 0} tool calls)`);
+        }
+      }
       res.write(`data: ${JSON.stringify(frame)}\n\n`);
     };
 

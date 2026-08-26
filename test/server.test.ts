@@ -7,6 +7,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Harness } from '../src/harness/harness.js';
 import { MockProvider } from '../src/llm/mock.js';
+import type { ChatProvider } from '../src/llm/provider.js';
 import { UiServer } from '../src/server/server.js';
 import type { ChatFrame } from '../src/server/session.js';
 
@@ -165,5 +166,41 @@ describe('UiServer', () => {
     expect(body.ok).toBe(true);
     const state = (await (await fetch(`${base}/api/state`)).json()) as Record<string, unknown>;
     expect(state.history).toBeUndefined(); // history stays server-side only
+  });
+
+  it('surfaces run-level errors (status "error") with their reason in the done frame', async () => {
+    const failing: ChatProvider = {
+      name: 'failing',
+      async chat() {
+        throw new Error('mock 402: insufficient balance');
+      },
+    };
+    const h = await Harness.create({
+      config: {
+        provider: { type: 'mock', model: 'm' },
+        budget: { maxRetries: 0 }, // fail fast, no backoff in tests
+      },
+      provider: failing,
+    });
+    const s = new UiServer({ harness: h, port: 0 });
+    const { url } = await s.start();
+    try {
+      const res = await fetch(`${url}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'hi' }),
+      });
+      const text = await res.text();
+      const frames = text
+        .split('\n\n')
+        .filter((l) => l.startsWith('data: '))
+        .map((l) => JSON.parse(l.slice(6)));
+      const done = frames.find((f) => f.type === 'done') as { status: string; error?: string };
+      expect(done.status).toBe('error');
+      expect(done.error).toContain('402');
+    } finally {
+      await s.stop();
+      await h.dispose();
+    }
   });
 });

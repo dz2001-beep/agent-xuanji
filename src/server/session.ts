@@ -17,7 +17,7 @@ const MAX_HISTORY = 60;
 export type ChatFrame =
   | { type: 'meta'; selectedSkills: string[]; provider: string; model: string }
   | { type: 'agent'; event: AgentEvent }
-  | { type: 'done'; status: string; iterations: number; toolCalls: number; tokens: number }
+  | { type: 'done'; status: string; iterations: number; toolCalls: number; tokens: number; error?: string }
   | { type: 'error'; message: string };
 
 export class ChatSession {
@@ -102,19 +102,26 @@ export class ChatSession {
         this.history = this.history.slice(-MAX_HISTORY);
       }
 
+      // Surface run-level failures (status !== 'ok') with their reason, so the
+      // UI shows *why* instead of a bare "error" line.
+      const runError = result.status !== 'ok' ? (result.error?.message ?? `run ended with status "${result.status}"`) : undefined;
+      if (runError) {
+        console.warn(`[harness-kit] [session] run failed (${result.status}): ${runError}`);
+      }
+
       emit({
         type: 'done',
         status: result.status,
         iterations: result.iterations,
         toolCalls: result.toolCalls,
         tokens: result.usage.totalTokens,
+        ...(runError ? { error: runError } : {}),
       });
     } catch (err) {
       const name = err instanceof Error ? err.name : '';
-      emit({
-        type: 'error',
-        message: name === 'AbortError' ? '已停止' : (err as Error).message,
-      });
+      const message = name === 'AbortError' ? '已停止' : (err as Error).message;
+      console.warn(`[harness-kit] [session] chat error: ${message}`);
+      emit({ type: 'error', message });
     } finally {
       this.busy = false;
       this.abortController = null;

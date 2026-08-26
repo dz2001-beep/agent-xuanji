@@ -174,6 +174,10 @@ export class Agent {
       } catch (err) {
         this.checkAbort(runOpts.signal); // if aborted mid-call, surface abort, not retry
         lastError = err;
+        const detail = err instanceof Error ? err.message : String(err);
+        console.warn(
+          `[harness-kit] [loop] provider call failed (attempt ${attempt + 1}/${maxRetries + 1}): ${detail}`,
+        );
       }
     }
     throw lastError;

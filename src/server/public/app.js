@@ -274,9 +274,15 @@ function finishTurn(frame, errorMsg) {
     currentAssistant.contentEl.classList.remove('streaming');
     const meta = document.createElement('div');
     meta.className = 'run-meta';
-    meta.textContent = errorMsg
-      ? `⚠ ${errorMsg}`
-      : `· ${frame.status} · ${frame.iterations} 轮 · ${frame.toolCalls} 次工具调用 · ${frame.tokens} tokens`;
+    if (errorMsg) {
+      meta.textContent = `⚠ ${errorMsg}`;
+    } else if (frame.error) {
+      // run-level failure: show status AND the concrete reason (e.g. 402/401)
+      meta.textContent = `⚠ ${frame.status} · ${frame.iterations} 轮 · ${frame.toolCalls} 次工具调用 · ${frame.error}`;
+      meta.style.color = 'var(--danger)';
+    } else {
+      meta.textContent = `· ${frame.status} · ${frame.iterations} 轮 · ${frame.toolCalls} 次工具调用 · ${frame.tokens} tokens`;
+    }
     currentAssistant.body.appendChild(meta);
     currentAssistant = null;
   }
