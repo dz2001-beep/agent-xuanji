@@ -8,7 +8,7 @@
 
 **璇玑（xuanji）**：一个从零实现的 TypeScript **Agent Harness**（代理运行时），把 **Agent Loop（循环编排）、MCP（模型上下文协议）、Skill（技能系统）** 三大能力组合成带 Web 工作台的完整产品，并针对 agent 生产落地的三大难题（不可测、成本失控、危险操作）做了三项稀缺优化。
 
-**GitHub**：https://github.com/dz2001-beep/agent-xuanji （TypeScript · Node.js · 126 个离线测试全绿 · 100% 自研）
+**GitHub**：https://github.com/dz2001-beep/agent-xuanji （TypeScript · Node.js · 100% 自研）
 
 ---
 
@@ -60,25 +60,51 @@ TypeScript / Node.js · 官方 MCP SDK · OpenAI 兼容协议（DeepSeek/OpenAI/
 
 ## 量化数据（写简历用）
 
-- **126 个 vitest 离线测试**全部通过（循环/工具/MCP/skill/服务端/轨迹/压缩/策略全覆盖）
 - 上下文压缩实测 **token 峰值 ↓96%**
 - 代码量：约 4,500 行 TypeScript，核心循环零框架依赖
 - 12 个 CLI 命令；真实天气/定位/搜索全部免 API Key
 
 ---
 
+## 三项优化（简历三条独立亮点）
+
+1. **轨迹记录与离线重放，让 agent 行为可回归测试** —— 把一次运行的事件流固化为 JSONL 轨迹，离线重放（不调模型）即可校验事件顺序、复算工具序列与 token，黄金轨迹比对可检出行为漂移，直接接入 CI 做 agent 的"快照回归测试"。
+2. **Token 预算驱动的上下文压缩，长会话成本可控** —— 零依赖 token 估算 + 分层策略（先裁剪超长工具结果、再折叠最旧轮次为结构化摘要），触发全程可观测；实测 8 轮长会话 token 峰值 **↓96%**。
+3. **参数级最小权限策略 + 人工审批流，危险操作可控** —— 声明式规则按"工具名 + 参数模式"裁决 allow/deny/ask：`rm -rf` 一类危险命令直接拦截，高风险调用推工作台弹窗审批（允许一次/拒绝），无审批回调时 fail-closed 默认拒绝。
+
+---
+
+## 测试是怎么做的（面试讲解版）
+
+测试策略：**全部离线、确定性、无网络** —— 用"脚本化数据"代替真实 LLM/API 调用，跑得快且可精确断言。
+
+| 测试数据 | 长什么样 | 验证什么 |
+|---|---|---|
+| **MockProvider 脚本 turns** | `turns: [{toolCalls:[...]}, {content:'pong'}]` —— 预写"模型每轮会说什么" | 循环的终止/重试/abort/事件顺序/工具回填 |
+| **fake fetch 响应** | 手写 OpenAI 兼容的 JSON 响应，注入 provider 的 `fetch` | wire 层编解码往返、工具名合法性 |
+| **HTML fixture** | 一段必应搜索结果页 HTML 常量 | 搜索解析器（标题/链接/摘要提取） |
+| **演示数据** | `DEMO_CITIES`（北京/上海/深圳/杭州） | 天气 server 的网络降级路径 |
+| **策略规则** | `rules: [{tool:'shell.*', when:{command:{matches:'rm -rf'}}, action:'deny'}]` | 策略裁决矩阵（deny/ask/allow/默认） |
+| **临时目录 fixture** | 测试里现场创建的真实文件/技能目录 | 文件工具、SKILL.md 加载 |
+
+---
+
 ## 简历写法参考（中文）
 
-> **璇玑 xuanji** — 开源 Agent Harness（GitHub：github.com/dz2001-beep/agent-xuanji，TypeScript，126 测试全绿）
+> **璇玑 xuanji** — 开源 Agent Harness（GitHub：github.com/dz2001-beep/agent-xuanji，TypeScript，100% 自研）
 > - 从零实现 Agent Loop 循环状态机（5 种终止态/重试/取消/超时）与类型化事件流，核心零框架依赖
 > - 基于官方 SDK 集成 MCP（stdio/HTTP、多 server 命名空间）；自研 SKILL.md 技能系统（中英文匹配、自动注入）
-> - **针对性优化**：轨迹记录与离线重放使 agent 行为可回归测试；token 预算驱动压缩（实测 ↓96%）；参数级最小权限策略 + 人工审批流（fail-closed）
+> - 亮点一：**轨迹记录与离线重放**，agent 行为可做快照式回归测试（CI 可接入）
+> - 亮点二：**token 预算驱动上下文压缩**，长会话 token 峰值实测 ↓96%
+> - 亮点三：**参数级最小权限策略 + 人工审批流**，危险调用 fail-closed 默认拒绝
 > - 交付 Codex 式 Web 工作台（SSE 流式/工作区隔离/模型切换/真实天气定位搜索免 Key）+ doctor 一键自检
 
 ## 简历写法参考（English）
 
-> **xuanji** — Open-source Agent Harness (TypeScript/Node, 126 offline tests)
+> **xuanji** — Open-source Agent Harness (TypeScript/Node, 100% self-built)
 > - Built the Agent Loop state machine from scratch (5 termination states, typed event stream, retry/cancel/timeout), zero-dependency core
 > - Integrated MCP via official SDK; designed a SKILL.md skill system with CJK-aware relevance matching and auto-injection
-> - Key optimizations: trace & offline replay making agent behavior regression-testable; token-budget-driven context compaction (measured −96% tokens); least-privilege policy engine with human-approval flow (fail-closed)
+> - Highlight 1: trace recording & offline replay — agent behavior becomes regression-testable (CI-ready)
+> - Highlight 2: token-budget-driven context compaction — measured −96% peak tokens on long sessions
+> - Highlight 3: parameter-level least-privilege policy engine + human approval flow — fail-closed by default
 > - Shipped a Codex-style web workspace (SSE streaming, workspace isolation, model switching, key-free weather/location/search) + one-command diagnostics
