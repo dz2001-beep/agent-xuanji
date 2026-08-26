@@ -49,12 +49,17 @@ TypeScript / Node.js · 官方 MCP SDK · OpenAI 兼容协议（DeepSeek/OpenAI/
 - 危险命令（如 `rm -rf`）直接拦截；高风险操作推送**工作台审批弹窗**（允许一次/拒绝）；无审批回调时 **fail-closed 默认拒绝**
 - CLI 终端交互审批 + SSE 双通道
 
-### 4. 其他工程优化
+### 4. 技能学习（Skill Learning）— 经验沉淀闭环（Trace → Skill）
+- `xuanji skill learn` 把**成功运行的轨迹自动提炼为可复用 SKILL.md**：提取有序工具路径 + 参数示例 + 参考输出
+- 多条同类轨迹合并时按**采用频次加权**（2/2 vs 1/2 的"高频"信号），只提炼成功运行
+- 闭环：跑成功 → 自动沉淀 → 下次同类任务**自动匹配注入**（对应 Voyager skill library / Agent Skills 生态方向）
+
+### 5. 其他工程优化
 - **wire 层工具名编解码**：规避 OpenAI 兼容 API 对工具名的字符约束（400 报错 → 协议层修复）
 - **空字符串 Key 陷阱**：`export KEY=""` 被误判的问题 → 修正取值优先级并给出诊断提示
 - **IP 定位不准**（网络出口聚合）：增加「我的城市」设置，持久化后天气查询优先用户真实位置
 - **doctor 一键自检**：Key / 模型连通性 / 工具名合法性 / 工作区，一条命令定位环境问题
-- **事件驱动架构**：单一类型化事件流同时服务 CLI 实时输出、UI 工具卡片、轨迹记录、审批推送
+- **事件驱动架构**：单一类型化事件流同时服务 CLI 实时输出、UI 工具卡片、轨迹记录、审批推送、技能提炼
 
 ---
 
@@ -66,11 +71,12 @@ TypeScript / Node.js · 官方 MCP SDK · OpenAI 兼容协议（DeepSeek/OpenAI/
 
 ---
 
-## 三项优化（简历三条独立亮点）
+## 四项优化（简历独立亮点）
 
 1. **轨迹记录与离线重放，让 agent 行为可回归测试** —— 把一次运行的事件流固化为 JSONL 轨迹，离线重放（不调模型）即可校验事件顺序、复算工具序列与 token，黄金轨迹比对可检出行为漂移，直接接入 CI 做 agent 的"快照回归测试"。
 2. **Token 预算驱动的上下文压缩，长会话成本可控** —— 零依赖 token 估算 + 分层策略（先裁剪超长工具结果、再折叠最旧轮次为结构化摘要），触发全程可观测；实测 8 轮长会话 token 峰值 **↓96%**。
 3. **参数级最小权限策略 + 人工审批流，危险操作可控** —— 声明式规则按"工具名 + 参数模式"裁决 allow/deny/ask：`rm -rf` 一类危险命令直接拦截，高风险调用推工作台弹窗审批（允许一次/拒绝），无审批回调时 fail-closed 默认拒绝。
+4. **技能学习（经验沉淀闭环）** —— 把成功运行的轨迹自动提炼为可复用 SKILL.md，多条同类轨迹按采用频次加权合并，跑成功 → 自动沉淀 → 下次同类任务自动匹配注入。
 
 ---
 
@@ -97,6 +103,7 @@ TypeScript / Node.js · 官方 MCP SDK · OpenAI 兼容协议（DeepSeek/OpenAI/
 > - 亮点一：**轨迹记录与离线重放**，agent 行为可做快照式回归测试（CI 可接入）
 > - 亮点二：**token 预算驱动上下文压缩**，长会话 token 峰值实测 ↓96%
 > - 亮点三：**参数级最小权限策略 + 人工审批流**，危险调用 fail-closed 默认拒绝
+> - 亮点四：**技能学习**，成功轨迹自动提炼为可复用技能（经验沉淀闭环）
 > - 交付 Codex 式 Web 工作台（SSE 流式/工作区隔离/模型切换/真实天气定位搜索免 Key）+ doctor 一键自检
 
 ## 简历写法参考（English）
@@ -107,4 +114,5 @@ TypeScript / Node.js · 官方 MCP SDK · OpenAI 兼容协议（DeepSeek/OpenAI/
 > - Highlight 1: trace recording & offline replay — agent behavior becomes regression-testable (CI-ready)
 > - Highlight 2: token-budget-driven context compaction — measured −96% peak tokens on long sessions
 > - Highlight 3: parameter-level least-privilege policy engine + human approval flow — fail-closed by default
+> - Highlight 4: skill learning — successful traces auto-distilled into reusable skills (experience loop)
 > - Shipped a Codex-style web workspace (SSE streaming, workspace isolation, model switching, key-free weather/location/search) + one-command diagnostics
