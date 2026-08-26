@@ -16,9 +16,12 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
+import { loadDotEnv } from '../src/env.js';
 import { Harness } from '../src/harness/harness.js';
 import { MockProvider } from '../src/llm/mock.js';
 import type { AgentEvent } from '../src/loop/events.js';
+
+loadDotEnv();
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 

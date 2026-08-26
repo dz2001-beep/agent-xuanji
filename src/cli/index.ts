@@ -12,10 +12,14 @@
 import { Command } from 'commander';
 import { promises as fs, appendFileSync } from 'node:fs';
 import path from 'node:path';
+import { loadDotEnv } from '../env.js';
 import { Harness } from '../harness/harness.js';
 import { loadConfigFile, type HarnessConfig } from '../harness/config.js';
 import { summarizeSkill } from '../skills/skill.js';
 import type { UiLogger } from '../server/server.js';
+
+// Load .env before anything reads process.env (API keys, config resolution…).
+loadDotEnv();
 
 const DEFAULT_CONFIG = 'harness.config.json';
 
