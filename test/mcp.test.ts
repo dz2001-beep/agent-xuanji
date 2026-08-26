@@ -9,6 +9,9 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { McpRegistry } from '../src/mcp/registry.js';
 import { createWeatherServer } from '../examples/mcp-servers/weather-server.js';
@@ -16,8 +19,13 @@ import { createWeatherServer } from '../examples/mcp-servers/weather-server.js';
 describe('McpRegistry (in-memory link)', () => {
   let registry: McpRegistry;
   let serverTransport: InMemoryTransport;
+  let savedHome: string | undefined;
 
   beforeAll(async () => {
+    // Isolate the persisted "my city" file into a temp XUANJI_HOME.
+    savedHome = process.env.XUANJI_HOME;
+    process.env.XUANJI_HOME = await fs.mkdtemp(path.join(os.tmpdir(), 'xuanji-city-'));
+
     const server = createWeatherServer();
     const [clientTransport, serverTransportPair] = InMemoryTransport.createLinkedPair();
     serverTransport = serverTransportPair;
@@ -30,18 +38,20 @@ describe('McpRegistry (in-memory link)', () => {
   afterAll(async () => {
     await registry.disconnectAll();
     await serverTransport.close();
+    if (savedHome === undefined) delete process.env.XUANJI_HOME;
+    else process.env.XUANJI_HOME = savedHome;
   });
 
   it('lists tools from the server', () => {
     const handle = registry.get('weather')!;
     expect(handle.serverInfo).toContain('xuanji-demo-server');
     const names = handle.tools.map((t) => t.name).sort();
-    expect(names).toEqual(['current', 'geo.city', 'time']);
+    expect(names).toEqual(['current', 'geo.city', 'geo.my_city', 'time']);
   });
 
   it('adapts MCP tools with namespaced harness names', () => {
     const tools = registry.toTools();
-    expect(tools.map((t) => t.name).sort()).toEqual(['weather.current', 'weather.geo.city', 'weather.time']);
+    expect(tools.map((t) => t.name).sort()).toEqual(['weather.current', 'weather.geo.city', 'weather.geo.my_city', 'weather.time']);
     const current = tools.find((t) => t.name === 'weather.current')!;
     expect(current.description).toContain('天气');
     // city is now optional (auto IP location)
@@ -103,11 +113,30 @@ describe('McpRegistry (in-memory link)', () => {
 
   it('refresh() re-lists tools without dropping the connection', async () => {
     await expect(registry.refresh()).resolves.toBeUndefined();
-    expect(registry.get('weather')!.tools).toHaveLength(3);
+    expect(registry.get('weather')!.tools).toHaveLength(4);
   });
 
   it('attach() rejects duplicate server ids', async () => {
     const [clientTransport] = InMemoryTransport.createLinkedPair();
     await expect(registry.attach('weather', clientTransport)).rejects.toThrow(/already connected/);
+  });
+
+  it('geo.my_city persists and takes priority over IP location', async () => {
+    const setRes = await registry.callTool('weather.geo.my_city', { city: '长春' });
+    expect(setRes.ok).toBe(true);
+
+    // weather.current without a city now uses the user-set city, not IP.
+    const w = await registry.callTool('weather.current', {});
+    expect(w.ok).toBe(true);
+    const data = JSON.parse((w as { ok: true; data: string }).data) as {
+      city: string;
+      locationSource: string;
+    };
+    expect(data.city).toContain('长春');
+    expect(data.locationSource).toBe('my-city');
+
+    // persisted under XUANJI_HOME
+    const file = path.join(process.env.XUANJI_HOME!, '.xuanji', 'weather-city.json');
+    expect(JSON.parse(await fs.readFile(file, 'utf8'))).toEqual({ city: '长春' });
   });
 });

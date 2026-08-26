@@ -190,6 +190,17 @@ describe('UiServer', () => {
     expect(bad.status).toBe(500);
   });
 
+  it('rejects /api/city with a clear hint when no weather server is configured', async () => {
+    const res = await fetch(`${base}/api/city`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ city: '长春' }),
+    });
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toContain('weather');
+  });
+
   it('surfaces run-level errors (status "error") with their reason in the done frame', async () => {
     const failing: ChatProvider = {
       name: 'failing',

@@ -58,6 +58,18 @@ export class ChatSession {
     this.harness.setModel(model);
   }
 
+  /**
+   * Persist the user's city ("我的城市") to the weather MCP server so
+   * `weather.current` uses it instead of the (often wrong) IP location.
+   */
+  async setMyCity(city: string): Promise<void> {
+    if (!city.trim()) throw new Error('城市名不能为空');
+    const res = await this.harness.mcp.callTool('weather.geo.my_city', { city: city.trim() });
+    if (!res.ok) {
+      throw new Error(`设置城市失败（需要配置 weather MCP server）: ${(res as { error: string }).error}`);
+    }
+  }
+
   /** Switch the session working directory (must exist and be a directory). */
   async setCwd(p: string): Promise<void> {
     const stat = await fs.stat(p).catch(() => null);

@@ -111,6 +111,12 @@ export class UiServer {
       this.log('info', `model → ${this.harness.config.provider.model}`);
       return sendJson(res, 200, { ok: true, model: this.harness.config.provider.model });
     }
+    if (method === 'POST' && url.pathname === '/api/city') {
+      const { city } = await readJsonBody(req);
+      await this.session.setMyCity(String(city));
+      this.log('info', `my city → ${city}`);
+      return sendJson(res, 200, { ok: true, city: String(city) });
+    }
     if (method === 'GET' && url.pathname === '/api/dirs') {
       const dir = await listDir(url.searchParams.get('path') ?? this.session.cwd);
       return sendJson(res, 200, dir);

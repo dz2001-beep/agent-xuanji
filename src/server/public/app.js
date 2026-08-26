@@ -24,6 +24,8 @@ const els = {
   skillsCount: $('skills-count'),
   clearBtn: $('clear-btn'),
   skillBanner: $('skill-banner'),
+  cityInput: $('city-input'),
+  citySave: $('city-save'),
   // dir modal
   dirModal: $('dir-modal'),
   dirCrumbs: $('dir-crumbs'),
@@ -156,6 +158,17 @@ function bindEvents() {
     } catch (err) {
       showBanner(`切换模型失败: ${err.message}`, true);
     }
+  });
+
+  // 我的城市（localStorage 记住，页面加载时自动恢复并同步到天气 server）
+  const savedCity = localStorage.getItem('xuanji.myCity') ?? '';
+  els.cityInput.value = savedCity;
+  if (savedCity) {
+    void saveCity(savedCity, true);
+  }
+  els.citySave.addEventListener('click', () => void saveCity(els.cityInput.value.trim(), false));
+  els.cityInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') void saveCity(els.cityInput.value.trim(), false);
   });
 }
 
@@ -565,6 +578,18 @@ function showBanner(text, isError = false) {
   els.skillBanner.classList.remove('hidden');
   clearTimeout(showBanner._t);
   showBanner._t = setTimeout(() => els.skillBanner.classList.add('hidden'), 5000);
+}
+
+async function saveCity(city, silent) {
+  try {
+    await fetchJson('/api/city', { city });
+    localStorage.setItem('xuanji.myCity', city);
+    els.cityInput.value = city;
+    if (!silent) showBanner(`🌤 我的城市已设为：${city}（问天气默认用它）`);
+  } catch (err) {
+    if (!silent) showBanner(`设置城市失败: ${err.message}`, true);
+    // 静默恢复失败（如未配置 weather server）不打扰用户
+  }
 }
 
 function scrollToBottom() {

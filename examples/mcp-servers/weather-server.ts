@@ -111,32 +111,73 @@ async function fetchWeather(lat: number, lon: number): Promise<{ temp: number; c
   };
 }
 
+/* ------------------------------------------------------------------ */
+/* "my city" — user-set city persisted to ~/.xuanji/weather-city.json  */
+/* ------------------------------------------------------------------ */
+
+import { promises as fsp } from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+
+const CITY_FILE = () =>
+  path.join(process.env.XUANJI_HOME ?? os.homedir(), '.xuanji', 'weather-city.json');
+
+let myCity: string | null = null;
+
+async function loadMyCity(): Promise<void> {
+  try {
+    const raw = await fsp.readFile(CITY_FILE(), 'utf8');
+    const parsed = JSON.parse(raw) as { city?: unknown };
+    if (typeof parsed.city === 'string' && parsed.city.trim()) myCity = parsed.city.trim();
+  } catch {
+    myCity = null;
+  }
+}
+
+async function saveMyCity(city: string): Promise<void> {
+  const file = CITY_FILE();
+  await fsp.mkdir(path.dirname(file), { recursive: true });
+  await fsp.writeFile(file, JSON.stringify({ city }, null, 2), 'utf8');
+}
+
 export function createWeatherServer(): Server {
   const server = new Server(
-    { name: 'xuanji-demo-server', version: '0.2.0' },
+    { name: 'xuanji-demo-server', version: '0.3.0' },
     { capabilities: { tools: {} } },
   );
+
+  void loadMyCity();
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
       {
         name: 'current',
         description:
-          '查询某城市的实时天气（温度/天气状况/湿度/风速）。不传 city 时自动用 IP 定位你的城市 —— 问"天气怎么样"即可知道你在哪。',
+          '查询某城市的实时天气（温度/天气状况/湿度/风速）。city 优先级：显式传入 > 已设置的"我的城市" > IP 自动定位。问"天气怎么样"即可。',
         inputSchema: {
           type: 'object',
           properties: {
             city: {
               type: 'string',
-              description: '城市名（如 北京、沈阳、上海；缺省 = 自动 IP 定位）',
+              description: '城市名（如 长春、北京；缺省 = "我的城市"或 IP 自动定位）',
             },
           },
           required: [],
         },
       },
       {
+        name: 'geo.my_city',
+        description:
+          '设置"我的城市"（持久化保存）。IP 定位可能不准（网络出口聚合），设置后查询天气默认用该城市。如：{"city":"长春"}',
+        inputSchema: {
+          type: 'object',
+          properties: { city: { type: 'string', description: '城市名，如 长春' } },
+          required: ['city'],
+        },
+      },
+      {
         name: 'geo.city',
-        description: '通过 IP 定位当前所在城市（返回城市/省份/国家/经纬度）。',
+        description: '通过 IP 定位当前所在城市（返回城市/省份/国家/经纬度）。注意：IP 定位是网络出口位置，可能不准。',
         inputSchema: { type: 'object', properties: {}, required: [] },
       },
       {
@@ -162,16 +203,25 @@ export function createWeatherServer(): Server {
             let city: string;
             let lat: number;
             let lon: number;
+            let locationSource: 'explicit' | 'my-city' | 'ip';
             if (cityArg) {
               const geo = await geocodeCity(cityArg);
               city = geo.name;
               lat = geo.lat;
               lon = geo.lon;
+              locationSource = 'explicit';
+            } else if (myCity) {
+              const geo = await geocodeCity(myCity);
+              city = geo.name;
+              lat = geo.lat;
+              lon = geo.lon;
+              locationSource = 'my-city';
             } else {
               const loc = await detectCity();
               city = loc.city;
               lat = loc.lat;
               lon = loc.lon;
+              locationSource = 'ip';
             }
             const weather = await fetchWeather(lat, lon);
             return {
@@ -183,6 +233,7 @@ export function createWeatherServer(): Server {
                     ...weather,
                     unit: 'celsius',
                     source: 'open-meteo',
+                    locationSource,
                     latencyMs: Date.now() - started,
                   }),
                 },
@@ -191,7 +242,7 @@ export function createWeatherServer(): Server {
             };
           } catch (err) {
             // Network fallback: bundled demo data keeps the agent moving.
-            const city = cityArg || '未知';
+            const city = cityArg || myCity || '未知';
             const demo = DEMO_CITIES[city] ?? DEMO_CITIES[city.toLowerCase()] ?? DEMO_CITIES['北京']!;
             return {
               content: [
@@ -209,6 +260,18 @@ export function createWeatherServer(): Server {
               isError: false,
             };
           }
+        }
+        case 'geo.my_city': {
+          const city = String((args as { city?: unknown })?.city ?? '').trim();
+          if (!city) {
+            return { content: [{ type: 'text' as const, text: 'city 不能为空' }], isError: true };
+          }
+          myCity = city;
+          await saveMyCity(city);
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({ ok: true, city: myCity }) }],
+            isError: false,
+          };
         }
         case 'geo.city': {
           const data = await detectCity();

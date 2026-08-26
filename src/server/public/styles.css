@@ -167,6 +167,22 @@ body::before {
   line-height: 1.5;
 }
 
+/* "我的城市" 输入框 */
+.city-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12.5px;
+  padding: 7px 10px;
+  outline: none;
+  margin-top: 4px;
+}
+
+.city-input:focus { border-color: rgba(34, 211, 238, 0.5); }
+.city-input::placeholder { color: var(--muted); }
+
 /* 运行环境 */
 .kv-row {
   display: flex;

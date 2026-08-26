@@ -51,7 +51,8 @@ harness 是"agent 的操作系统"—— 它不负责模型本身，而是解决
 - 多 server 注册表，工具命名空间 `<serverId>.<toolName>` 防重名（如 `weather.current`）
 - 工具列表缓存 + 按需 `refresh()`；协议结果（`content[]`/`isError`/`structuredContent`）统一归一化
 - **自带真实天气 server**（无需 API Key）：
-  - `weather.current(city?)` —— **open-meteo 真实天气**（温度/状况/湿度/风速）；不传城市时**自动 IP 定位**（ip-api.com），问"天气怎么样"就知道你在哪个城市
+  - `weather.current(city?)` —— **open-meteo 真实天气**（温度/状况/湿度/风速）；城市优先级：**显式传入 > 「我的城市」> IP 自动定位**（ip-api.com）
+  - `geo.my_city(city)` —— 设置「我的城市」并持久化（~/.xuanji/weather-city.json）：IP 定位可能不准（网络出口聚合），设置后问"天气怎么样"就用它；工作台侧边栏可直接设置
   - `geo.city` —— IP 定位当前城市/省份/国家/经纬度
   - 网络不可达时自动降级内置演示数据，不打断 agent
   - 测试走 in-memory 真实协议链路
