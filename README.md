@@ -258,7 +258,7 @@ npm run build         # tsc 构建 + 静态资源复制
 
 覆盖：循环终止/重试/abort/超时/事件顺序、工具注册与参数校验、内置工具行为、SKILL.md 解析与中英文匹配、MCP 真实协议链路（in-memory）、wire 名编解码往返（fake fetch 全链路）、Web 服务端（HTTP API + SSE + 目录浏览 + cwd/模型切换）、.env 加载与优先级、doctor 诊断。
 
-设计取舍的完整讨论（为什么用官方 MCP SDK、为什么零依赖做 schema 校验与技能匹配、如何规避 API 工具名约束、与生产 harness 的差距与扩展点）见 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**。
+设计取舍的完整讨论（为什么用官方 MCP SDK、为什么零依赖做 schema 校验与技能匹配、如何规避 API 工具名约束、与生产 harness 的差距与扩展点）见 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**；三大可靠性优化的技术实现与测试详解见 **[docs/OPTIMIZATIONS.md](docs/OPTIMIZATIONS.md)**。
 
 ---
 
