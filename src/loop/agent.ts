@@ -24,6 +24,7 @@ import { validateArgs, formatIssues } from '../tools/schema.js';
 import { ToolError } from '../tools/tool.js';
 import { addUsage, emptyUsage } from '../types.js';
 import { abortError, isAbortError, sleep, stringify, withTimeout } from '../utils.js';
+import { isOverBudget, compactMessages, type CompactionOptions } from './compact.js';
 import { createEmitter, type AgentEvent, type EventEmitter } from './events.js';
 
 export interface AgentOptions {
@@ -40,6 +41,8 @@ export interface AgentOptions {
   temperature?: number;
   /** Custom stopping predicate evaluated after each executed turn. */
   stopWhen?: (state: LoopState) => boolean;
+  /** Budget-driven context compaction (layer 1 trim tool results, layer 2 fold turns). */
+  compaction?: CompactionOptions;
   onEvent?: (event: AgentEvent) => void;
 }
 
@@ -115,6 +118,8 @@ export class Agent {
         state.iterations++;
         emitter.emit({ type: 'turn.start', iteration: state.iterations });
 
+        this.maybeCompact(state, emitter);
+
         const response = await this.askModel(messages, emitter, runOpts, usage);
         state.messages.push({ role: 'assistant', content: response.message.content, toolCalls: response.message.toolCalls });
 
@@ -140,6 +145,30 @@ export class Agent {
 
   private checkAbort(signal?: AbortSignal): void {
     if (signal?.aborted) throw abortError('Run aborted by caller');
+  }
+
+  /**
+   * Budget-driven compaction: when the estimated context exceeds the budget,
+   * reduce messages (trim oversized tool results, then fold the oldest
+   * turns) and emit a `context.compacted` event for observability.
+   */
+  private maybeCompact(state: LoopState, emitter: EventEmitter): void {
+    const opts = this.opts.compaction;
+    if (!opts) return;
+    if (!isOverBudget(state.messages, opts.maxContextTokens)) return;
+
+    const { messages, beforeTokens, afterTokens, foldedTurns, trimmedResults } = compactMessages(
+      state.messages,
+      opts,
+    );
+    state.messages = messages;
+    emitter.emit({
+      type: 'context.compacted',
+      beforeTokens,
+      afterTokens,
+      foldedTurns,
+      trimmedResults,
+    });
   }
 
   /** Ask the model, retrying transient failures with linear backoff. */

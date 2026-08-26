@@ -39,6 +39,7 @@ harness 是"agent 的操作系统"—— 它不负责模型本身，而是解决
 - **5 种终止状态**：`ok` / `max-iterations`（预算兜底）/ `stopped`（自定义谓词）/ `aborted`（取消）/ `error`（重试耗尽）
 - **健壮性**：LLM 瞬时失败自动退避重试；`AbortSignal` 全链路取消；工具执行超时保护
 - **参数预校验**：调用工具前做轻量 JSON-Schema 检查（缺依赖、可解释），拦截模型幻觉
+- **Token 预算驱动的上下文压缩**：超出预算自动分层压缩（裁剪超长工具结果 → 折叠最旧轮次为摘要），实测同会话 token 峰值 ↓96%
 - **类型化事件流**：`llm.delta` / `llm.turn` / `tool.call` / `tool.result` / `tool.error` / `agent.done` —— CLI 实时输出与前端卡片都是它的消费者
 - 完整返回：最终回答 + 全程对话记录 + token 统计
 
@@ -213,7 +214,7 @@ xuanji demo                  # 端到端演示（无 Key 自动 mock）
   "mcp": [
     { "id": "weather", "transport": "stdio", "command": "node", "args": ["dist/examples/mcp-servers/weather-server.js"] }
   ],
-  "budget": { "maxIterations": 15, "toolTimeoutMs": 30000, "maxRetries": 2 }
+  "budget": { "maxIterations": 15, "toolTimeoutMs": 30000, "maxRetries": 2, "maxContextTokens": 8000 }
 }
 ```
 

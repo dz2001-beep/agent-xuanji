@@ -100,6 +100,17 @@ export class Harness {
       toolTimeoutMs: this.config.budget.toolTimeoutMs,
       maxRetries: this.config.budget.maxRetries,
       retryDelayMs: this.config.budget.retryDelayMs,
+      ...(this.config.budget.maxContextTokens
+        ? {
+            compaction: {
+              maxContextTokens: this.config.budget.maxContextTokens,
+              trimToolResults: this.config.budget.trimToolResults,
+              ...(this.config.budget.maxToolResultChars
+                ? { maxToolResultChars: this.config.budget.maxToolResultChars }
+                : {}),
+            },
+          }
+        : {}),
       ...opts,
     });
   }

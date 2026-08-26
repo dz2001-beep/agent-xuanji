@@ -18,6 +18,7 @@ export type AgentEvent =
   | { type: 'tool.call'; name: string; args: unknown; callId: string }
   | { type: 'tool.result'; name: string; callId: string; result: ToolResult; durationMs: number }
   | { type: 'tool.error'; name: string; callId: string; error: Error }
+  | { type: 'context.compacted'; beforeTokens: number; afterTokens: number; foldedTurns: number; trimmedResults: number }
   | { type: 'agent.done'; result: AgentResult };
 
 export type AgentEventHandler = (event: AgentEvent) => void;

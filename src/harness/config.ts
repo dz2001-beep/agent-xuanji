@@ -24,6 +24,12 @@ export interface BudgetConfig {
   toolTimeoutMs?: number;
   maxRetries?: number;
   retryDelayMs?: number;
+  /** Context budget in estimated tokens; exceeding it triggers compaction. */
+  maxContextTokens?: number;
+  /** Trim oversized tool results when compacting (default true). */
+  trimToolResults?: boolean;
+  /** Tool results longer than this many chars get trimmed. */
+  maxToolResultChars?: number;
 }
 
 export interface HarnessConfig {
