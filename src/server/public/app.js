@@ -54,13 +54,31 @@ async function refreshState() {
     els.cwdPath.textContent = s.cwd;
     els.cwdPath.title = s.cwd;
     els.kvProvider.textContent = s.provider;
-    els.kvModel.textContent = s.model;
+    renderModelSelect(s.models ?? [], s.model);
     els.toolsCount.textContent = s.tools.length;
     els.skillsCount.textContent = s.skills.length;
     renderTags(els.toolsList, s.tools);
     renderTags(els.skillsList, s.skills.map((x) => x.name));
   } catch (err) {
     showBanner(`加载状态失败: ${err.message}`, true);
+  }
+}
+
+function renderModelSelect(models, current) {
+  els.kvModel.textContent = '';
+  for (const m of models) {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    if (m === current) opt.selected = true;
+    els.kvModel.appendChild(opt);
+  }
+  if (!models.includes(current) && current) {
+    const opt = document.createElement('option');
+    opt.value = current;
+    opt.textContent = `${current}（当前）`;
+    opt.selected = true;
+    els.kvModel.appendChild(opt);
   }
 }
 
@@ -126,6 +144,17 @@ function bindEvents() {
   els.dirInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') void navigateDir(els.dirInput.value);
     if (e.key === 'Escape') closeDirModal();
+  });
+
+  // 模型切换
+  els.kvModel.addEventListener('change', async () => {
+    const model = els.kvModel.value;
+    try {
+      await fetchJson('/api/model', { model });
+      showBanner(`🤖 已切换模型：${model}`);
+    } catch (err) {
+      showBanner(`切换模型失败: ${err.message}`, true);
+    }
   });
 }
 
@@ -201,7 +230,7 @@ function handleFrame(frame) {
   switch (frame.type) {
     case 'meta':
       els.kvProvider.textContent = frame.provider;
-      els.kvModel.textContent = frame.model;
+      if (frame.model) els.kvModel.value = frame.model;
       if (frame.provider === 'mock') {
         showBanner(
           '⚠ 当前为 Mock 离线演示模式（未检测到有效 API Key）。设置 DEEPSEEK_API_KEY 后重启 ui 即可用真实模型。',

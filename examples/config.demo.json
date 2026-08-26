@@ -3,6 +3,7 @@
     "type": "openai",
     "model": "deepseek-chat"
   },
+  "models": ["deepseek-v4-flash", "deepseek-chat", "deepseek-reasoner"],
   "tools": ["fs", "shell"],
   "skills": {
     "dirs": ["./examples/skills"],

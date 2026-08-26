@@ -130,6 +130,18 @@ export class Harness {
     return agent.run(input, { ...opts, system });
   }
 
+  /**
+   * Switch the active model at runtime (used by the web UI picker).
+   * Works for openai-compatible providers; mock ignores it.
+   */
+  setModel(model: string): void {
+    if (!model.trim()) throw new Error('model must be a non-empty string');
+    if (this.provider instanceof OpenAICompatibleProvider) {
+      this.provider.setModel(model.trim());
+    }
+    this.config.provider.model = model.trim();
+  }
+
   /** Tear down MCP connections. */
   async dispose(): Promise<void> {
     await this.mcp.disconnectAll();

@@ -164,4 +164,31 @@ describe('Harness', () => {
       else delete process.env.DEEPSEEK_API_KEY;
     }
   });
+
+  it('setModel switches the active model at runtime', async () => {
+    const harness = await Harness.create({
+      config: {
+        provider: { type: 'openai', model: 'deepseek-chat', apiKey: 'sk-test' },
+        models: ['deepseek-chat', 'deepseek-reasoner'],
+      },
+    });
+    try {
+      expect(harness.config.provider.model).toBe('deepseek-chat');
+      harness.setModel('deepseek-reasoner');
+      expect(harness.config.provider.model).toBe('deepseek-reasoner');
+      expect(() => harness.setModel('')).toThrow(/non-empty/);
+    } finally {
+      await harness.dispose();
+    }
+  });
+
+  it('normalizes models to include the configured model', () => {
+    const cfg = normalizeConfig({ provider: { type: 'mock', model: 'my-custom-model' } });
+    expect(cfg.models).toContain('my-custom-model');
+    const custom = normalizeConfig({
+      provider: { type: 'mock', model: 'a' },
+      models: ['a', 'b'],
+    });
+    expect(custom.models).toEqual(['a', 'b']);
+  });
 });

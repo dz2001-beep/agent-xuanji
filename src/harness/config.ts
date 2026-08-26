@@ -36,6 +36,12 @@ export interface HarnessConfig {
   /** MCP servers to connect at startup. */
   mcp?: McpServerConfig[];
   budget?: BudgetConfig;
+  /**
+   * Models offered in the web UI's model picker. Defaults to
+   * [deepseek-chat, deepseek-reasoner] with the configured model guaranteed
+   * to be included.
+   */
+  models?: string[];
 }
 
 export const DEFAULT_SKILLS: SkillsConfig = {
@@ -52,7 +58,12 @@ const DEFAULTS: Partial<HarnessConfig> = {
   budget: {},
 };
 
+export const DEFAULT_MODELS = ['deepseek-chat', 'deepseek-reasoner'];
+
 export function normalizeConfig(cfg: HarnessConfig): Required<HarnessConfig> {
+  const models = [...(cfg.models ?? DEFAULT_MODELS)];
+  const current = cfg.provider.model;
+  if (current && !models.includes(current)) models.unshift(current);
   const merged = {
     provider: cfg.provider,
     system: cfg.system ?? '',
@@ -60,6 +71,7 @@ export function normalizeConfig(cfg: HarnessConfig): Required<HarnessConfig> {
     skills: { ...DEFAULT_SKILLS, ...cfg.skills },
     mcp: cfg.mcp ?? [],
     budget: cfg.budget ?? {},
+    models,
   };
   if (!merged.provider?.model) {
     throw new Error('config.provider.model is required');

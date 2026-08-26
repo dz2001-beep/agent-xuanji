@@ -168,6 +168,28 @@ describe('UiServer', () => {
     expect(state.history).toBeUndefined(); // history stays server-side only
   });
 
+  it('switches the model via the API and validates unknown models', async () => {
+    const res = await fetch(`${base}/api/model`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'deepseek-reasoner' }),
+    });
+    const body = (await res.json()) as { ok: boolean; model: string };
+    expect(body.ok).toBe(true);
+    expect(body.model).toBe('deepseek-reasoner');
+
+    const state = (await (await fetch(`${base}/api/state`)).json()) as { model: string; models: string[] };
+    expect(state.model).toBe('deepseek-reasoner');
+    expect(Array.isArray(state.models)).toBe(true);
+
+    const bad = await fetch(`${base}/api/model`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'no-such-model-xyz' }),
+    });
+    expect(bad.status).toBe(500);
+  });
+
   it('surfaces run-level errors (status "error") with their reason in the done frame', async () => {
     const failing: ChatProvider = {
       name: 'failing',

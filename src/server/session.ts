@@ -41,11 +41,21 @@ export class ChatSession {
       cwd: this.cwd,
       provider: this.harness.provider.name,
       model: this.harness.config.provider.model,
+      models: this.harness.config.models,
       tools: this.harness.tools.names(),
       skills: this.harness.skills.list().map((s) => ({ name: s.name, description: s.description })),
       mcpServers: this.harness.mcp.handlesList().map((h) => ({ id: h.id, tools: h.tools.map((t) => t.name) })),
       running: this.busy,
     };
+  }
+
+  /** Switch the active model (validated against the configured model list). */
+  async setModel(model: string): Promise<void> {
+    const list = this.harness.config.models;
+    if (list.length > 0 && !list.includes(model)) {
+      throw new Error(`未知模型 "${model}"（可用: ${list.join(', ')}；可在配置文件的 "models" 字段中添加）`);
+    }
+    this.harness.setModel(model);
   }
 
   /** Switch the session working directory (must exist and be a directory). */

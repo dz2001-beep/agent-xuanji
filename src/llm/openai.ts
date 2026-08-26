@@ -55,8 +55,9 @@ function toWireTool(t: Tool) {
 
 export class OpenAICompatibleProvider implements ChatProvider {
   readonly name = 'openai-compatible';
+  /** Current model — mutable so the web UI can switch models at runtime. */
+  model: string;
   private client: OpenAI;
-  private readonly model: string;
   private readonly temperature?: number;
 
   constructor(opts: OpenAIProviderOptions) {
@@ -67,6 +68,10 @@ export class OpenAICompatibleProvider implements ChatProvider {
       baseURL: opts.baseURL,
       maxRetries: opts.maxRetries ?? 2,
     });
+  }
+
+  setModel(model: string): void {
+    this.model = model;
   }
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
