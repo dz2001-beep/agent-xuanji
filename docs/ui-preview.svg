@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="btn" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="1200" height="760" rx="16" fill="#0b0e14"/>
+  <g stroke="#ffffff" stroke-opacity="0.02" stroke-width="1">
+    <path d="M0 34 H1200 M0 68 H1200 M0 102 H1200 M0 136 H1200 M0 170 H1200 M0 204 H1200 M0 238 H1200 M0 272 H1200 M0 306 H1200 M0 340 H1200 M0 374 H1200 M0 408 H1200 M0 442 H1200 M0 476 H1200 M0 510 H1200 M0 544 H1200 M0 578 H1200 M0 612 H1200 M0 646 H1200 M0 680 H1200 M0 714 H1200"/>
+    <path d="M34 0 V760 M68 0 V760 M102 0 V760 M136 0 V760 M170 0 V760 M204 0 V760 M238 0 V760 M272 0 V760"/>
+  </g>
+
+  <!-- 侧边栏 -->
+  <rect x="14" y="14" width="262" height="732" rx="14" fill="#12161f" stroke="#ffffff" stroke-opacity="0.07"/>
+
+  <!-- 品牌 -->
+  <text x="30" y="48" font-size="20" font-weight="800" font-family="'JetBrains Mono', Menlo, monospace">
+    <tspan fill="url(#accent)">&gt;_</tspan>
+  </text>
+  <text x="78" y="44" font-size="15" font-weight="700" fill="#e6e9f0">harness-kit</text>
+  <text x="78" y="60" font-size="11" fill="#6b7484">agent harness · 工作台</text>
+  <line x1="28" y1="72" x2="262" y2="72" stroke="#ffffff" stroke-opacity="0.07"/>
+
+  <!-- 工作区卡 -->
+  <rect x="28" y="86" width="234" height="92" rx="10" fill="#ffffff" fill-opacity="0.02" stroke="#ffffff" stroke-opacity="0.07"/>
+  <text x="40" y="108" font-size="12" font-weight="600" fill="#9aa3b2">📁 工作区</text>
+  <text x="40" y="130" font-size="12" fill="#e6e9f0" font-family="'JetBrains Mono', Menlo, monospace">/Users/dz/workspace/个人作品</text>
+  <text x="40" y="146" font-size="12" fill="#e6e9f0" font-family="'JetBrains Mono', Menlo, monospace">/harness-kit/examples</text>
+  <text x="40" y="166" font-size="10.5" fill="#6b7484">agent 生成的文件都在此目录，与产品代码隔离</text>
+
+  <!-- 运行环境卡 -->
+  <rect x="28" y="192" width="234" height="66" rx="10" fill="#ffffff" fill-opacity="0.02" stroke="#ffffff" stroke-opacity="0.07"/>
+  <text x="40" y="214" font-size="12" font-weight="600" fill="#9aa3b2">🛰 运行环境</text>
+  <text x="40" y="236" font-size="12" fill="#6b7484">provider</text>
+  <text x="180" y="236" font-size="12" fill="#9aa3b2" font-family="'JetBrains Mono', Menlo, monospace" text-anchor="end">openai-compatible</text>
+  <text x="40" y="254" font-size="12" fill="#6b7484">model</text>
+  <rect x="116" y="240" width="98" height="20" rx="6" fill="#000000" fill-opacity="0.35" stroke="#ffffff" stroke-opacity="0.1"/>
+  <text x="120" y="254" font-size="11.5" fill="#e6e9f0" font-family="'JetBrains Mono', Menlo, monospace">deepseek-v4-flash ▾</text>
+
+  <!-- 工具卡 -->
+  <rect x="28" y="272" width="234" height="118" rx="10" fill="#ffffff" fill-opacity="0.02" stroke="#ffffff" stroke-opacity="0.07"/>
+  <text x="40" y="294" font-size="12" font-weight="600" fill="#9aa3b2">🧰 工具</text>
+  <rect x="76" y="280" width="26" height="16" rx="8" fill="#22d3ee" fill-opacity="0.1" stroke="#22d3ee" stroke-opacity="0.3"/>
+  <text x="89" y="292" font-size="10" fill="#22d3ee" font-family="'JetBrains Mono', Menlo, monospace" text-anchor="middle">8</text>
+  <g font-size="11" font-family="'JetBrains Mono', Menlo, monospace">
+    <rect x="40" y="306" width="104" height="22" rx="6" fill="#ffffff" fill-opacity="0.04" stroke="#ffffff" stroke-opacity="0.08"/><text x="50" y="321" fill="#9aa3b2">fs.read_file</text>
+    <rect x="152" y="306" width="98" height="22" rx="6" fill="#ffffff" fill-opacity="0.04" stroke="#ffffff" stroke-opacity="0.08"/><text x="162" y="321" fill="#9aa3b2">fs.write_file</text>
+    <rect x="40" y="336" width="96" height="22" rx="6" fill="#ffffff" fill-opacity="0.04" stroke="#ffffff" stroke-opacity="0.08"/><text x="50" y="351" fill="#9aa3b2">fs.list_dir</text>
+    <rect x="144" y="336" width="90" height="22" rx="6" fill="#ffffff" fill-opacity="0.04" stroke="#ffffff" stroke-opacity="0.08"/><text x="154" y="351" fill="#9aa3b2">shell.run</text>
+    <rect x="40" y="366" width="120" height="22" rx="6" fill="#22d3ee" fill-opacity="0.08" stroke="#22d3ee" stroke-opacity="0.25"/><text x="50" y="381" fill="#22d3ee">weather.current</text>
+  </g>
+
+  <!-- 技能卡 -->
+  <rect x="28" y="404" width="234" height="100" rx="10" fill="#ffffff" fill-opacity="0.02" stroke="#ffffff" stroke-opacity="0.07"/>
+  <text x="40" y="426" font-size="12" font-weight="600" fill="#9aa3b2">📚 技能</text>
+  <rect x="76" y="412" width="26" height="16" rx="8" fill="#22d3ee" fill-opacity="0.1" stroke="#22d3ee" stroke-opacity="0.3"/>
+  <text x="89" y="424" font-size="10" fill="#22d3ee" font-family="'JetBrains Mono', Menlo, monospace" text-anchor="middle">3</text>
+  <g font-size="11" font-family="'JetBrains Mono', Menlo, monospace">
+    <rect x="40" y="438" width="104" height="22" rx="6" fill="#a78bfa" fill-opacity="0.08" stroke="#a78bfa" stroke-opacity="0.25"/><text x="50" y="453" fill="#a78bfa">code-review</text>
+    <rect x="152" y="438" width="98" height="22" rx="6" fill="#ffffff" fill-opacity="0.04" stroke="#ffffff" stroke-opacity="0.08"/><text x="162" y="453" fill="#9aa3b2">commit-message</text>
+    <rect x="40" y="468" width="96" height="22" rx="6" fill="#ffffff" fill-opacity="0.04" stroke="#ffffff" stroke-opacity="0.08"/><text x="50" y="483" fill="#9aa3b2">sqlite-query</text>
+  </g>
+
+  <!-- 底部 -->
+  <rect x="28" y="686" width="234" height="34" rx="9" fill="#ffffff" fill-opacity="0.04" stroke="#ffffff" stroke-opacity="0.1"/>
+  <text x="145" y="708" font-size="12.5" fill="#9aa3b2" text-anchor="middle">🗑 清空会话</text>
+  <text x="145" y="738" font-size="10" fill="#6b7484" text-anchor="middle">harness-kit v0.1.0 · MIT</text>
+
+  <!-- 主区 -->
+  <rect x="290" y="14" width="896" height="732" rx="14" fill="#0f131c" stroke="#ffffff" stroke-opacity="0.07"/>
+
+  <!-- 技能提示条 -->
+  <rect x="316" y="34" width="844" height="34" rx="10" fill="#a78bfa" fill-opacity="0.08" stroke="#a78bfa" stroke-opacity="0.25"/>
+  <text x="330" y="56" font-size="12" fill="#a78bfa">✨ 已自动注入技能：「code-review」「commit-message」，正在执行</text>
+
+  <!-- 用户消息 -->
+  <rect x="706" y="84" width="454" height="52" rx="13" fill="#22d3ee" fill-opacity="0.12" stroke="#22d3ee" stroke-opacity="0.3"/>
+  <text x="726" y="106" font-size="13.5" fill="#e6e9f0">帮我 review 一下 examples/sample/buggy.ts 的代码</text>
+  <text x="726" y="126" font-size="13.5" fill="#e6e9f0">有什么问题，并告诉我北京现在的天气怎么样。</text>
+  <rect x="1154" y="96" width="28" height="28" rx="8" fill="#ffffff" fill-opacity="0.08"/>
+  <text x="1168" y="115" font-size="12" fill="#9aa3b2" text-anchor="middle">你</text>
+
+  <!-- 助手回合 -->
+  <rect x="324" y="84" width="32" height="32" rx="9" fill="url(#accent)"/>
+  <text x="340" y="107" font-size="16" font-weight="800" fill="#0b0e14" text-anchor="middle">✦</text>
+
+  <!-- 工具卡片 1：fs.read_file（进行中/完成） -->
+  <rect x="368" y="84" width="300" height="52" rx="10" fill="#ffffff" fill-opacity="0.02" stroke="#22d3ee" stroke-opacity="0.35" stroke-width="1.5"/>
+  <line x1="368" y1="84" x2="368" y2="136" stroke="#22d3ee" stroke-width="3"/>
+  <text x="384" y="108" font-size="12.5" font-family="'JetBrains Mono', Menlo, monospace" fill="#e6e9f0">📁 fs.read_file</text>
+  <text x="612" y="108" font-size="11" fill="#34d399" font-family="'JetBrains Mono', Menlo, monospace" text-anchor="end">✔ 3ms</text>
+  <text x="384" y="128" font-size="11" fill="#6b7484" font-family="'JetBrains Mono', Menlo, monospace">{"path": "buggy.ts"}  ▾</text>
+
+  <!-- 工具卡片 2：weather.current -->
+  <rect x="368" y="144" width="300" height="52" rx="10" fill="#ffffff" fill-opacity="0.02" stroke="#22d3ee" stroke-opacity="0.35" stroke-width="1.5"/>
+  <line x1="368" y1="144" x2="368" y2="196" stroke="#22d3ee" stroke-width="3"/>
+  <text x="384" y="168" font-size="12.5" font-family="'JetBrains Mono', Menlo, monospace" fill="#e6e9f0">🔧 weather.current</text>
+  <text x="612" y="168" font-size="11" fill="#34d399" font-family="'JetBrains Mono', Menlo, monospace" text-anchor="end">✔ 2ms</text>
+  <text x="384" y="188" font-size="11" fill="#6b7484" font-family="'JetBrains Mono', Menlo, monospace">{"city": "北京"}  ▾</text>
+
+  <!-- 流式回答 -->
+  <text x="368" y="230" font-size="13.5" font-weight="700" fill="#e6e9f0">### 代码评审结论</text>
+  <text x="368" y="252" font-size="13" fill="#9aa3b2">🔴 sumTo 中 i &lt;= n 是 off-by-one（多算一次），且 sum / 0 会产生 Infinity</text>
+  <text x="368" y="272" font-size="13" fill="#9aa3b2">🔴 divide 未处理 b === 0，会抛出异常</text>
+  <text x="368" y="292" font-size="13" fill="#9aa3b2">🟢 format 残留 console.log 调试语句，变量名 x 语义不明</text>
+  <text x="368" y="312" font-size="13" fill="#9aa3b2">另外：北京当前 24°C，晴，湿度 40%（数据来自 MCP demo server）</text>
+  <text x="368" y="332" font-size="13" fill="#22d3ee">▍</text>
+
+  <text x="368" y="360" font-size="11" fill="#6b7484" font-family="'JetBrains Mono', Menlo, monospace">· ok · 3 轮 · 2 次工具调用 · 486 tokens</text>
+
+  <!-- 输入区 -->
+  <rect x="316" y="672" width="844" height="56" rx="13" fill="#000000" fill-opacity="0.35" stroke="#22d3ee" stroke-opacity="0.4"/>
+  <text x="334" y="704" font-size="13.5" fill="#6b7484">输入任务，Enter 发送，Shift+Enter 换行…</text>
+  <rect x="1030" y="680" width="118" height="40" rx="10" fill="url(#btn)"/>
+  <text x="1089" y="705" font-size="13.5" font-weight="700" fill="#0b0e14" text-anchor="middle">发送 ↵</text>
+</svg>
