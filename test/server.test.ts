@@ -201,6 +201,38 @@ describe('UiServer', () => {
     expect(body.error).toContain('weather');
   });
 
+  it('records runs and serves the full event chain for the trace view', async () => {
+    const res = await fetch(`${base}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: '链路测试' }),
+    });
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    const done = text
+      .split('\n\n')
+      .filter((l) => l.startsWith('data: '))
+      .map((l) => JSON.parse(l.slice(6)))
+      .find((f) => f.type === 'done') as { runId: string; status: string };
+    expect(done.runId).toBeTruthy();
+
+    const runs = (await (await fetch(`${base}/api/runs`)).json()) as Array<{ id: string; input: string; status: string }>;
+    const run = runs.find((r) => r.id === done.runId);
+    expect(run).toBeTruthy();
+    expect(run?.input).toBe('链路测试');
+
+    const detail = (await (await fetch(`${base}/api/runs/${done.runId}`)).json()) as {
+      events: Array<{ type: string }>;
+      iterations: number;
+    };
+    expect(detail.events.length).toBeGreaterThan(0);
+    expect(detail.events[0]?.type).toBe('agent.start');
+    expect(detail.events.some((e) => e.type === 'llm.turn')).toBe(true);
+
+    const missing = await fetch(`${base}/api/runs/does-not-exist`);
+    expect(missing.status).toBe(404);
+  });
+
   it('surfaces run-level errors (status "error") with their reason in the done frame', async () => {
     const failing: ChatProvider = {
       name: 'failing',

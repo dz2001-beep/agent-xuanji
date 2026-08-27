@@ -21,8 +21,22 @@ export type ChatFrame =
   | { type: 'meta'; selectedSkills: string[]; provider: string; model: string }
   | { type: 'agent'; event: AgentEvent }
   | { type: 'approval.request'; request: import('../loop/agent.js').ApprovalRequest }
-  | { type: 'done'; status: string; iterations: number; toolCalls: number; tokens: number; error?: string }
+  | { type: 'done'; runId: string; status: string; iterations: number; toolCalls: number; tokens: number; error?: string }
   | { type: 'error'; message: string };
+
+/** One recorded run: its full event chain (链路), kept in-memory for the UI. */
+export interface RunRecord {
+  id: string;
+  input: string;
+  startedAt: string;
+  status: string;
+  iterations: number;
+  toolCalls: number;
+  tokens: number;
+  events: AgentEvent[];
+}
+
+const MAX_RUNS = 20;
 
 export class ChatSession {
   cwd: string;
@@ -31,10 +45,22 @@ export class ChatSession {
   private busy = false;
   private abortController: AbortController | null = null;
   private readonly pendingApprovals = new Map<string, (approved: boolean) => void>();
+  /** Full event chains of recent runs (链路数据，供 UI 查看). */
+  private readonly runs: RunRecord[] = [];
 
   constructor(harness: Harness, cwd = process.cwd()) {
     this.harness = harness;
     this.cwd = cwd;
+  }
+
+  /** Run summaries for the UI (id / input / status / metrics). */
+  get runList(): Array<Omit<RunRecord, 'events'>> {
+    return this.runs.map(({ events: _events, ...rest }) => rest);
+  }
+
+  /** Full event chain of one run (链路详情). */
+  getRun(id: string): RunRecord | undefined {
+    return this.runs.find((r) => r.id === id);
   }
 
   /** Resolve a pending approval from the UI (POST /api/approval). */
@@ -105,6 +131,8 @@ export class ChatSession {
     this.busy = true;
     this.abortController = new AbortController();
     this.history.push({ role: 'user', content: message });
+    const runId = `run_${Date.now().toString(36)}`;
+    const runEvents: AgentEvent[] = [];
 
     try {
       const selected = this.harness.skills.select(message, {
@@ -120,7 +148,10 @@ export class ChatSession {
 
       const agent = this.harness.buildAgent({
         stream: true,
-        onEvent: (e) => emit({ type: 'agent', event: e }),
+        onEvent: (e) => {
+          runEvents.push(e); // 链路数据：完整事件链
+          emit({ type: 'agent', event: e });
+        },
         onApproval: (req) =>
           new Promise<boolean>((resolve) => {
             const timer = setTimeout(() => {
@@ -157,8 +188,21 @@ export class ChatSession {
         console.warn(`[xuanji] [session] run failed (${result.status}): ${runError}`);
       }
 
+      this.runs.push({
+        id: runId,
+        input: message,
+        startedAt: new Date().toISOString(),
+        status: result.status,
+        iterations: result.iterations,
+        toolCalls: result.toolCalls,
+        tokens: result.usage.totalTokens,
+        events: runEvents,
+      });
+      if (this.runs.length > MAX_RUNS) this.runs.shift();
+
       emit({
         type: 'done',
+        runId,
         status: result.status,
         iterations: result.iterations,
         toolCalls: result.toolCalls,

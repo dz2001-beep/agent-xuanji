@@ -41,6 +41,10 @@ const els = {
   approvalReasonRow: $('approval-reason-row'),
   approvalAllow: $('approval-allow'),
   approvalDeny: $('approval-deny'),
+  // trace modal（链路）
+  traceModal: $('trace-modal'),
+  traceMeta: $('trace-meta'),
+  traceTimeline: $('trace-timeline'),
 };
 
 const state = {
@@ -54,6 +58,7 @@ const state = {
 async function init() {
   bindEvents();
   bindApprovalEvents();
+  bindTraceEvents();
   await refreshState();
   autoGrow();
 }
@@ -339,10 +344,148 @@ function finishTurn(frame, errorMsg) {
       meta.textContent = `· ${frame.status} · ${frame.iterations} 轮 · ${frame.toolCalls} 次工具调用 · ${frame.tokens} tokens`;
     }
     currentAssistant.body.appendChild(meta);
+
+    // 链路入口：查看本次运行的完整事件链
+    if (frame.runId) {
+      const link = document.createElement('button');
+      link.className = 'btn btn-ghost btn-sm trace-link';
+      link.textContent = '🔗 查看链路';
+      link.title = '查看模型输出与工具调用链路';
+      link.addEventListener('click', () => void openTraceModal(frame.runId));
+      currentAssistant.body.appendChild(link);
+    }
+
     currentAssistant = null;
   }
   setRunning(false);
   if (errorMsg) showBanner(`⚠ ${errorMsg}`, true);
+}
+
+/* ───────────────────────── 链路视图（全链路观测） ───────────────────────── */
+
+let lastTraceRunId = null;
+
+async function openTraceModal(runId) {
+  lastTraceRunId = runId;
+  els.traceModal.classList.remove('hidden');
+  els.traceMeta.textContent = '加载中…';
+  els.traceTimeline.textContent = '';
+  try {
+    const run = await fetchJson(`/api/runs/${encodeURIComponent(runId)}`);
+    renderTraceMeta(run);
+    renderTraceTimeline(run.events ?? []);
+  } catch (err) {
+    els.traceMeta.textContent = `加载失败: ${err.message}`;
+  }
+}
+
+function closeTraceModal() {
+  els.traceModal.classList.add('hidden');
+}
+
+function renderTraceMeta(run) {
+  els.traceMeta.textContent = '';
+  const meta = document.createElement('div');
+  meta.textContent =
+    `输入: ${run.input}  ·  状态: ${run.status}  ·  ${run.iterations} 轮  ·  ${run.toolCalls} 次工具调用  ·  ${run.tokens} tokens`;
+  els.traceMeta.appendChild(meta);
+}
+
+function renderTraceTimeline(events) {
+  els.traceTimeline.textContent = '';
+  let turn = 0;
+  for (const e of events) {
+    const row = document.createElement('div');
+    row.className = 'tl-row';
+    switch (e.type) {
+      case 'turn.start':
+        turn = e.iteration;
+        row.className = 'tl-row tl-turn';
+        const turnLabel = document.createElement('div');
+        turnLabel.className = 'tl-node tl-node-turn';
+        turnLabel.textContent = `轮次 ${turn}`;
+        row.appendChild(turnLabel);
+        break;
+      case 'llm.turn':
+        row.className = 'tl-row tl-llm';
+        const llmNode = document.createElement('div');
+        llmNode.className = 'tl-node tl-node-llm';
+        llmNode.textContent = '✦';
+        row.appendChild(llmNode);
+        const llmBody = document.createElement('div');
+        llmBody.className = 'tl-body';
+        if (e.message?.toolCalls?.length) {
+          llmBody.textContent = `请求调用工具: ${e.message.toolCalls.map((t) => t.name).join(', ')}`;
+        } else if (e.message?.content) {
+          llmBody.textContent = e.message.content;
+        }
+        if (e.usage) {
+          const u = document.createElement('span');
+          u.className = 'tl-token';
+          u.textContent = ` ${e.usage.promptTokens}+${e.usage.completionTokens} tok`;
+          llmBody.appendChild(u);
+        }
+        row.appendChild(llmBody);
+        break;
+      case 'tool.call':
+        row.className = 'tl-row tl-tool';
+        const toolNode = document.createElement('div');
+        toolNode.className = 'tl-node tl-node-tool';
+        toolNode.textContent = '🔧';
+        row.appendChild(toolNode);
+        const toolBody = document.createElement('div');
+        toolBody.className = 'tl-body';
+        const toolName = document.createElement('div');
+        toolName.className = 'tl-tool-name';
+        toolName.textContent = e.name;
+        toolBody.appendChild(toolName);
+        const args = document.createElement('pre');
+        args.className = 'tl-args';
+        args.textContent = safeJson(e.args);
+        toolBody.appendChild(args);
+        row.appendChild(toolBody);
+        break;
+      case 'tool.result':
+      case 'tool.error':
+        row.className = 'tl-row tl-tool-result';
+        const resNode = document.createElement('div');
+        resNode.className = 'tl-node';
+        resNode.textContent = e.type === 'tool.result' ? '✓' : '✗';
+        row.appendChild(resNode);
+        const resBody = document.createElement('div');
+        resBody.className = 'tl-body';
+        if (e.type === 'tool.result') {
+          resBody.textContent = `完成 (${e.durationMs}ms)`;
+          const pre = document.createElement('pre');
+          pre.className = 'tl-args';
+          pre.textContent = summarizeResult(e.result);
+          resBody.appendChild(pre);
+        } else {
+          resBody.textContent = `失败: ${e.error?.message ?? ''}`;
+          resBody.style.color = 'var(--danger)';
+        }
+        row.appendChild(resBody);
+        break;
+      case 'context.compacted':
+        row.className = 'tl-row tl-llm';
+        const cNode = document.createElement('div');
+        cNode.className = 'tl-node tl-node-llm';
+        cNode.textContent = '📦';
+        row.appendChild(cNode);
+        const cBody = document.createElement('div');
+        cBody.className = 'tl-body';
+        cBody.textContent = `上下文压缩: ${e.beforeTokens} → ${e.afterTokens} tokens（折叠 ${e.foldedTurns} 轮 / 裁剪 ${e.trimmedResults} 个结果）`;
+        row.appendChild(cBody);
+        break;
+      default:
+        continue; // agent.start / agent.done / llm.delta 等不单独成行
+    }
+    els.traceTimeline.appendChild(row);
+  }
+}
+
+function bindTraceEvents() {
+  $('trace-close').addEventListener('click', closeTraceModal);
 }
 
 /* ───────────────────────── 消息渲染 ───────────────────────── */

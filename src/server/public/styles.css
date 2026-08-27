@@ -773,3 +773,128 @@ body::before {
   font-size: 11px;
   color: var(--muted);
 }
+
+/* ═══════════════════ 链路弹窗（时间线）═══════════════════ */
+
+.trace-modal { width: min(720px, 94vw); }
+
+.trace-meta {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+  word-break: break-all;
+}
+
+.trace-timeline {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.tl-row {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  padding: 5px 0 5px 4px;
+}
+
+/* 时间线竖线 */
+.tl-row::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 24px;
+  bottom: -6px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tl-row:last-child::before { display: none; }
+
+.tl-node {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  z-index: 1;
+  background: var(--panel-solid);
+  border: 1px solid var(--border-strong);
+}
+
+.tl-node-llm {
+  color: var(--accent2);
+  border-color: rgba(167, 139, 250, 0.4);
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.tl-node-tool {
+  color: var(--accent);
+  border-color: rgba(34, 211, 238, 0.4);
+  font-size: 12px;
+}
+
+.tl-node-turn {
+  width: auto;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+
+.tl-body {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text);
+  word-break: break-word;
+  padding-top: 2px;
+}
+
+.tl-token {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.tl-tool-name {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tl-args {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 7px;
+  padding: 6px 9px;
+  margin-top: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.tl-row.tl-llm .tl-body { color: var(--text-dim); }
+.tl-row.tl-tool-result .tl-body { color: var(--muted); font-size: 12.5px; }
+
+/* 消息里的链路按钮 */
+.trace-link {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+}

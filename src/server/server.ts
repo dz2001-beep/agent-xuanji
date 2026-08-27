@@ -93,6 +93,17 @@ export class UiServer {
     if (method === 'GET' && url.pathname === '/api/health') return sendJson(res, 200, { ok: true });
     if (method === 'GET' && url.pathname === '/api/state') return sendJson(res, 200, this.session.state);
 
+    // 链路（全链路观测）：运行列表 / 单次运行完整事件链
+    if (method === 'GET' && url.pathname === '/api/runs') {
+      return sendJson(res, 200, this.session.runList);
+    }
+    if (method === 'GET' && url.pathname.startsWith('/api/runs/')) {
+      const id = decodeURIComponent(url.pathname.slice('/api/runs/'.length));
+      const run = this.session.getRun(id);
+      if (!run) return sendJson(res, 404, { error: `run ${id} 不存在` });
+      return sendJson(res, 200, run);
+    }
+
     if (method === 'POST' && url.pathname === '/api/chat') return this.handleChat(req, res);
     if (method === 'POST' && url.pathname === '/api/abort') {
       this.session.abort();
