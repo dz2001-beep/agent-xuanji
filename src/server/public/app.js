@@ -67,11 +67,16 @@ const state = {
 /* ───────────────────────── 初始化 ───────────────────────── */
 
 async function init() {
-  bindEvents();
-  bindApprovalEvents();
-  bindObservatoryEvents();
-  await refreshState();
-  autoGrow();
+  try {
+    bindEvents();
+    bindApprovalEvents();
+    bindObservatoryEvents();
+    await refreshState();
+    autoGrow();
+  } catch (err) {
+    console.error('[xuanji] 初始化失败:', err);
+    showBanner(`初始化失败: ${err.message}`, true);
+  }
 }
 
 async function refreshState() {
@@ -373,6 +378,10 @@ function finishTurn(frame, errorMsg) {
   }
   setRunning(false);
   if (errorMsg) showBanner(`⚠ ${errorMsg}`, true);
+  // 对话结束后观测台自动刷新，链路列表保持最新
+  if (!els.observatory.classList.contains('hidden')) {
+    void loadObservatory();
+  }
 }
 
 /* ───────────────────────── 观测台（链路 + 评估） ───────────────────────── */
@@ -389,7 +398,11 @@ function switchTab(tab) {
 }
 
 async function loadObservatory() {
-  await Promise.all([loadRuns(), loadEvalReport()]);
+  await Promise.allSettled([loadRuns(), loadEvalReport()]);
+  // 若链路详情正展开，同步重载（保证"刷新"连详情一起更新）
+  if (selectedRunId && !els.obsTraceSection.classList.contains('hidden')) {
+    void openRunInObservatory(selectedRunId);
+  }
 }
 
 /** 运行链路列表 */
@@ -533,7 +546,21 @@ function renderEvalReport(report) {
 function bindObservatoryEvents() {
   els.navChat.addEventListener('click', () => switchTab('chat'));
   els.navObservatory.addEventListener('click', () => switchTab('observatory'));
-  els.obsRefresh.addEventListener('click', () => void loadObservatory());
+  els.obsRefresh.addEventListener('click', async () => {
+    const btn = els.obsRefresh;
+    const old = btn.textContent;
+    btn.textContent = '刷新中…';
+    btn.disabled = true;
+    try {
+      await loadObservatory();
+      showBanner('↻ 观测台已刷新');
+    } catch {
+      showBanner('刷新失败', true);
+    } finally {
+      btn.textContent = old;
+      btn.disabled = false;
+    }
+  });
   els.obsTraceClose.addEventListener('click', closeObsTrace);
   els.obsEvalRun.addEventListener('click', () => void runEvalFromUI());
 }
