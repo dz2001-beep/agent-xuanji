@@ -56,6 +56,8 @@ const els = {
   obsEvalLabel: $('obs-eval-label'),
   obsEvalRun: $('obs-eval-run'),
   obsEvalReport: $('obs-eval-report'),
+  sfxToggle: $('sfx-toggle'),
+  hudTime: $('hud-time'),
 };
 
 const state = {
@@ -66,11 +68,32 @@ const state = {
 
 /* ───────────────────────── 初始化 ───────────────────────── */
 
+function bindSfxToggle() {
+  const sync = () => {
+    const on = window.sfx?.enabled ?? true;
+    els.sfxToggle.textContent = on ? '🔊 音效：开' : '🔇 音效：关';
+    els.sfxToggle.classList.toggle('on', on);
+  };
+  sync();
+  els.sfxToggle.addEventListener('click', () => {
+    window.sfx?.setEnabled(!(window.sfx?.enabled ?? true));
+    sync();
+    if (window.sfx?.enabled) window.sfx.click();
+  });
+  // HUD 时钟
+  const tick = () => {
+    if (els.hudTime) els.hudTime.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  };
+  tick();
+  setInterval(tick, 1000);
+}
+
 async function init() {
   try {
     bindEvents();
     bindApprovalEvents();
     bindObservatoryEvents();
+    bindSfxToggle();
     await refreshState();
     autoGrow();
   } catch (err) {
@@ -221,6 +244,7 @@ function setRunning(running) {
 async function send() {
   const text = els.input.value.trim();
   if (!text || state.running) return;
+  window.sfx?.send();
 
   els.input.value = '';
   autoGrow();
@@ -319,14 +343,17 @@ function handleAgentEvent(e) {
       }
       break;
     case 'tool.call':
+      window.sfx?.tool();
       addToolCard(e.name, e.args, e.callId);
       scrollToBottom();
       break;
     case 'tool.result':
+      window.sfx?.toolOk();
       updateToolCard(e.callId, { status: 'ok', durationMs: e.durationMs, result: summarizeResult(e.result) });
       scrollToBottom();
       break;
     case 'tool.error':
+      window.sfx?.toolOk();
       updateToolCard(e.callId, { status: 'err', error: e.error?.message ?? 'unknown error' });
       scrollToBottom();
       break;
@@ -377,7 +404,12 @@ function finishTurn(frame, errorMsg) {
     currentAssistant = null;
   }
   setRunning(false);
-  if (errorMsg) showBanner(`⚠ ${errorMsg}`, true);
+  if (errorMsg) {
+    window.sfx?.error();
+    showBanner(`⚠ ${errorMsg}`, true);
+  } else {
+    window.sfx?.done();
+  }
   // 对话结束后观测台自动刷新，链路列表保持最新
   if (!els.observatory.classList.contains('hidden')) {
     void loadObservatory();
@@ -930,6 +962,7 @@ async function saveCity(city, silent) {
 let currentApproval = null;
 
 function showApproval(req) {
+  window.sfx?.approval();
   currentApproval = req;
   els.approvalTool.textContent = req.toolName;
   els.approvalArgs.textContent = safeJson(req.args);
