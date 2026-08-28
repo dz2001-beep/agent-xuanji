@@ -19,6 +19,11 @@
         </div>
       </div>
 
+      <nav class="nav-tabs">
+        <button id="nav-chat" class="nav-tab active">💬 对话</button>
+        <button id="nav-observatory" class="nav-tab">📊 观测台</button>
+      </nav>
+
       <section class="card cwd-card">
         <div class="card-title">
           <span>📁 工作区</span>
@@ -94,6 +99,41 @@
         <div class="composer-hint">agent 可调用工具：fs 读写、shell 命令、MCP server（如天气/时间）</div>
       </div>
     </main>
+
+    <!-- ══════════════════ 观测台（链路 + 效果评估）══════════════════ -->
+    <main id="observatory" class="main observatory hidden">
+      <div class="obs-head">
+        <h2 class="obs-title">📊 观测台</h2>
+        <div class="obs-head-right">
+          <button id="obs-refresh" class="btn btn-ghost btn-sm">↻ 刷新</button>
+        </div>
+      </div>
+
+      <section class="obs-section">
+        <div class="obs-section-title">🔗 运行链路 <span id="obs-runs-count" class="chip">0</span></div>
+        <div id="obs-runs" class="obs-runs">
+          <div class="obs-empty">暂无运行记录 —— 去「💬 对话」里发几条消息，或点右上角刷新</div>
+        </div>
+      </section>
+
+      <section id="obs-trace-section" class="obs-section hidden">
+        <div class="obs-section-title">链路详情 <button id="obs-trace-close" class="btn btn-ghost btn-sm">收起</button></div>
+        <div id="obs-trace-meta" class="trace-meta"></div>
+        <div id="obs-trace-timeline" class="trace-timeline"></div>
+      </section>
+
+      <section class="obs-section">
+        <div class="obs-section-title">
+          📈 效果评估
+          <span class="obs-eval-controls">
+            <input id="obs-eval-label" class="input obs-eval-label" placeholder="label（如 v1）" spellcheck="false" />
+            <button id="obs-eval-run" class="btn btn-primary btn-sm">▶ 运行评测集</button>
+          </span>
+        </div>
+        <div class="obs-eval-hint">使用内置场景化评测集（examples/eval/demo-cases.json），以 mock 模式离线运行，产出通过率 / token / 工具效率指标报告。</div>
+        <div id="obs-eval-report" class="obs-eval-report"></div>
+      </section>
+    </main>
   </div>
 
   <!-- ══════════════════ 目录选择弹窗 ══════════════════ -->
@@ -132,18 +172,6 @@
         <button id="approval-allow" class="btn btn-primary">✔ 允许执行一次</button>
       </div>
       <div class="approval-hint">拒绝后该工具调用会以错误回馈给 agent，它不会重复执行同一调用</div>
-    </div>
-  </div>
-
-  <!-- ══════════════════ 链路弹窗（全链路观测）══════════════════ -->
-  <div id="trace-modal" class="modal-mask hidden">
-    <div class="modal trace-modal">
-      <div class="modal-head">
-        <span class="modal-title">🔗 运行链路</span>
-        <button id="trace-close" class="btn btn-ghost btn-sm">✕</button>
-      </div>
-      <div id="trace-meta" class="trace-meta"></div>
-      <div id="trace-timeline" class="trace-timeline"></div>
     </div>
   </div>
 

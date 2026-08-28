@@ -104,6 +104,14 @@ export class UiServer {
       return sendJson(res, 200, run);
     }
 
+    // 效果评估：最近报告 / 运行评测集
+    if (method === 'GET' && url.pathname === '/api/eval') {
+      return sendJson(res, 200, { report: this.session.evalReport });
+    }
+    if (method === 'POST' && url.pathname === '/api/eval/run') {
+      return this.handleEvalRun(req, res);
+    }
+
     if (method === 'POST' && url.pathname === '/api/chat') return this.handleChat(req, res);
     if (method === 'POST' && url.pathname === '/api/abort') {
       this.session.abort();
@@ -184,6 +192,40 @@ export class UiServer {
       emit({ type: 'error', message: e.message });
     }
     res.end();
+  }
+
+  /** Run an eval dataset (mock or the session's real harness) and keep the report. */
+  private async handleEvalRun(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    const { runEval } = await import('../eval.js');
+    const { dataset, label, mock } = await readJsonBody(req);
+    const datasetPath = path.resolve(String(dataset ?? path.join(process.cwd(), 'examples/eval/demo-cases.json')));
+    const raw = await fs.readFile(datasetPath, 'utf8').catch(() => null);
+    if (!raw) return sendJson(res, 400, { error: `评测集不存在: ${datasetPath}` });
+    const cases = (JSON.parse(raw) as { cases: Array<{ id: string; prompt: string }> }).cases;
+
+    this.log('info', `eval run start: ${datasetPath} (mock=${mock ? 'yes' : 'no'})`);
+    const tempHarnesses: import('../harness/harness.js').Harness[] = [];
+    try {
+      const run = async (prompt: string) => {
+        if (mock) {
+          // independent offline harness — no network, fast, deterministic
+          const { Harness: H } = await import('../harness/harness.js');
+          const h = await H.create({
+            config: { provider: { type: 'mock', model: 'mock-model' }, tools: ['fs', 'shell', 'web'] },
+            forceMock: true,
+          });
+          tempHarnesses.push(h);
+          return h.run(prompt);
+        }
+        return this.harness.run(prompt);
+      };
+      const report = await runEval(cases, run, { label: String(label ?? 'workspace') });
+      this.session.setEvalReport(report);
+      this.log('info', `eval done: ${report.summary.passed}/${report.summary.total} passed`);
+      return sendJson(res, 200, { report });
+    } finally {
+      for (const h of tempHarnesses) await h.dispose();
+    }
   }
 
   private async serveStatic(pathname: string, res: http.ServerResponse): Promise<void> {

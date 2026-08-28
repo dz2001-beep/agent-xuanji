@@ -41,10 +41,21 @@ const els = {
   approvalReasonRow: $('approval-reason-row'),
   approvalAllow: $('approval-allow'),
   approvalDeny: $('approval-deny'),
-  // trace modal（链路）
-  traceModal: $('trace-modal'),
-  traceMeta: $('trace-meta'),
-  traceTimeline: $('trace-timeline'),
+  // 观测台（链路 + 评估）
+  mainChat: document.querySelector('.main:not(.observatory)'),
+  observatory: $('observatory'),
+  navChat: $('nav-chat'),
+  navObservatory: $('nav-observatory'),
+  obsRuns: $('obs-runs'),
+  obsRunsCount: $('obs-runs-count'),
+  obsRefresh: $('obs-refresh'),
+  obsTraceSection: $('obs-trace-section'),
+  obsTraceMeta: $('obs-trace-meta'),
+  obsTraceTimeline: $('obs-trace-timeline'),
+  obsTraceClose: $('obs-trace-close'),
+  obsEvalLabel: $('obs-eval-label'),
+  obsEvalRun: $('obs-eval-run'),
+  obsEvalReport: $('obs-eval-report'),
 };
 
 const state = {
@@ -58,7 +69,7 @@ const state = {
 async function init() {
   bindEvents();
   bindApprovalEvents();
-  bindTraceEvents();
+  bindObservatoryEvents();
   await refreshState();
   autoGrow();
 }
@@ -350,8 +361,11 @@ function finishTurn(frame, errorMsg) {
       const link = document.createElement('button');
       link.className = 'btn btn-ghost btn-sm trace-link';
       link.textContent = '🔗 查看链路';
-      link.title = '查看模型输出与工具调用链路';
-      link.addEventListener('click', () => void openTraceModal(frame.runId));
+      link.title = '在观测台查看模型输出与工具调用链路';
+      link.addEventListener('click', () => {
+        switchTab('observatory');
+        void openRunInObservatory(frame.runId);
+      });
       currentAssistant.body.appendChild(link);
     }
 
@@ -361,38 +375,179 @@ function finishTurn(frame, errorMsg) {
   if (errorMsg) showBanner(`⚠ ${errorMsg}`, true);
 }
 
-/* ───────────────────────── 链路视图（全链路观测） ───────────────────────── */
+/* ───────────────────────── 观测台（链路 + 评估） ───────────────────────── */
 
-let lastTraceRunId = null;
+let selectedRunId = null;
 
-async function openTraceModal(runId) {
-  lastTraceRunId = runId;
-  els.traceModal.classList.remove('hidden');
-  els.traceMeta.textContent = '加载中…';
-  els.traceTimeline.textContent = '';
+function switchTab(tab) {
+  const isChat = tab === 'chat';
+  els.mainChat.classList.toggle('hidden', !isChat);
+  els.observatory.classList.toggle('hidden', isChat);
+  els.navChat.classList.toggle('active', isChat);
+  els.navObservatory.classList.toggle('active', !isChat);
+  if (!isChat) void loadObservatory();
+}
+
+async function loadObservatory() {
+  await Promise.all([loadRuns(), loadEvalReport()]);
+}
+
+/** 运行链路列表 */
+async function loadRuns() {
+  try {
+    const runs = await fetchJson('/api/runs');
+    els.obsRunsCount.textContent = runs.length;
+    renderRunList(runs);
+  } catch (err) {
+    els.obsRuns.textContent = `加载失败: ${err.message}`;
+  }
+}
+
+function renderRunList(runs) {
+  els.obsRuns.textContent = '';
+  if (runs.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'obs-empty';
+    empty.textContent = '暂无运行记录 —— 去「💬 对话」里发几条消息，或点右上角刷新';
+    els.obsRuns.appendChild(empty);
+    return;
+  }
+  for (const r of [...runs].reverse()) {
+    const row = document.createElement('div');
+    row.className = `obs-run-row${r.id === selectedRunId ? ' selected' : ''}`;
+    const left = document.createElement('div');
+    left.className = 'obs-run-left';
+    const input = document.createElement('div');
+    input.className = 'obs-run-input';
+    input.textContent = r.input;
+    const time = document.createElement('div');
+    time.className = 'obs-run-time';
+    time.textContent = new Date(r.startedAt).toLocaleTimeString();
+    left.append(input, time);
+    const right = document.createElement('div');
+    right.className = 'obs-run-right';
+    right.textContent = `${r.status} · ${r.iterations} 轮 · ${r.toolCalls} 工具 · ${r.tokens} tok`;
+    if (r.status !== 'ok') right.style.color = 'var(--danger)';
+    row.append(left, right);
+    row.addEventListener('click', () => {
+      selectedRunId = r.id;
+      void openRunInObservatory(r.id);
+      renderRunList(runs);
+    });
+    els.obsRuns.appendChild(row);
+  }
+}
+
+/** 单次运行链路详情 */
+async function openRunInObservatory(runId) {
+  els.obsTraceSection.classList.remove('hidden');
+  els.obsTraceMeta.textContent = '加载中…';
+  els.obsTraceTimeline.textContent = '';
   try {
     const run = await fetchJson(`/api/runs/${encodeURIComponent(runId)}`);
     renderTraceMeta(run);
     renderTraceTimeline(run.events ?? []);
   } catch (err) {
-    els.traceMeta.textContent = `加载失败: ${err.message}`;
+    els.obsTraceMeta.textContent = `加载失败: ${err.message}`;
   }
 }
 
-function closeTraceModal() {
-  els.traceModal.classList.add('hidden');
+function closeObsTrace() {
+  els.obsTraceSection.classList.add('hidden');
+}
+
+/** 效果评估 */
+async function loadEvalReport() {
+  try {
+    const { report } = await fetchJson('/api/eval');
+    renderEvalReport(report);
+  } catch {
+    /* 无报告不提示 */
+  }
+}
+
+async function runEvalFromUI() {
+  const label = els.obsEvalLabel.value.trim() || 'workspace';
+  els.obsEvalReport.textContent = '⏳ 评测运行中（mock 离线，5 个用例）…';
+  try {
+    const res = await fetch('/api/eval/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label, mock: true }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+    renderEvalReport(data.report);
+    showBanner(`📈 评测完成：${data.report.summary.passed}/${data.report.summary.total} 通过`);
+  } catch (err) {
+    els.obsEvalReport.textContent = `评测失败: ${err.message}`;
+  }
+}
+
+function renderEvalReport(report) {
+  els.obsEvalReport.textContent = '';
+  if (!report) {
+    const empty = document.createElement('div');
+    empty.className = 'obs-empty';
+    empty.textContent = '还没有评测报告 —— 点「▶ 运行评测集」跑一次';
+    els.obsEvalReport.appendChild(empty);
+    return;
+  }
+  const summary = document.createElement('div');
+  summary.className = 'obs-eval-summary';
+  summary.textContent =
+    `${report.label}  ·  通过 ${report.summary.passed}/${report.summary.total} (${(report.summary.passRate * 100).toFixed(1)}%)` +
+    `  ·  总 token ${report.summary.totalTokens}  ·  平均 ${report.summary.avgTokens} tok / ${report.summary.avgToolCalls} 工具`;
+  els.obsEvalReport.appendChild(summary);
+
+  const table = document.createElement('table');
+  table.className = 'obs-eval-table';
+  const head = document.createElement('tr');
+  for (const h of ['用例', '状态', '工具', 'token', '耗时', '结果']) {
+    const th = document.createElement('th');
+    th.textContent = h;
+    head.appendChild(th);
+  }
+  table.appendChild(head);
+  for (const c of report.cases) {
+    const tr = document.createElement('tr');
+    const cells = [
+      c.id,
+      c.status,
+      String(c.toolCalls),
+      String(c.tokens),
+      `${c.durationMs}ms`,
+      c.passed ? '✓' : `✗ ${c.failures.join('; ')}`,
+    ];
+    for (let i = 0; i < cells.length; i++) {
+      const td = document.createElement('td');
+      td.textContent = cells[i];
+      if (i === 5) td.className = c.passed ? 'ok' : 'fail';
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+  els.obsEvalReport.appendChild(table);
+}
+
+function bindObservatoryEvents() {
+  els.navChat.addEventListener('click', () => switchTab('chat'));
+  els.navObservatory.addEventListener('click', () => switchTab('observatory'));
+  els.obsRefresh.addEventListener('click', () => void loadObservatory());
+  els.obsTraceClose.addEventListener('click', closeObsTrace);
+  els.obsEvalRun.addEventListener('click', () => void runEvalFromUI());
 }
 
 function renderTraceMeta(run) {
-  els.traceMeta.textContent = '';
+  els.obsTraceMeta.textContent = '';
   const meta = document.createElement('div');
   meta.textContent =
     `输入: ${run.input}  ·  状态: ${run.status}  ·  ${run.iterations} 轮  ·  ${run.toolCalls} 次工具调用  ·  ${run.tokens} tokens`;
-  els.traceMeta.appendChild(meta);
+  els.obsTraceMeta.appendChild(meta);
 }
 
 function renderTraceTimeline(events) {
-  els.traceTimeline.textContent = '';
+  els.obsTraceTimeline.textContent = '';
   let turn = 0;
   for (const e of events) {
     const row = document.createElement('div');
@@ -480,12 +635,8 @@ function renderTraceTimeline(events) {
       default:
         continue; // agent.start / agent.done / llm.delta 等不单独成行
     }
-    els.traceTimeline.appendChild(row);
+    els.obsTraceTimeline.appendChild(row);
   }
-}
-
-function bindTraceEvents() {
-  $('trace-close').addEventListener('click', closeTraceModal);
 }
 
 /* ───────────────────────── 消息渲染 ───────────────────────── */

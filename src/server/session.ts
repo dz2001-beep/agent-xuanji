@@ -63,6 +63,17 @@ export class ChatSession {
     return this.runs.find((r) => r.id === id);
   }
 
+  /** Most recent eval report (效果评估). */
+  private lastEvalReport: import('../eval.js').EvalReport | null = null;
+
+  get evalReport(): import('../eval.js').EvalReport | null {
+    return this.lastEvalReport;
+  }
+
+  setEvalReport(report: import('../eval.js').EvalReport): void {
+    this.lastEvalReport = report;
+  }
+
   /** Resolve a pending approval from the UI (POST /api/approval). */
   resolveApproval(id: string, approved: boolean): boolean {
     const resolve = this.pendingApprovals.get(id);
