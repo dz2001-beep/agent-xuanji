@@ -46,7 +46,8 @@ export interface HarnessCreateOptions {
 }
 
 export class Harness {
-  readonly provider: ChatProvider;
+  /** Mutable — the settings page can hot-swap the provider at runtime. */
+  provider: ChatProvider;
   readonly tools: ToolRegistry;
   readonly mcp: McpRegistry;
   readonly skills: SkillRegistry;
@@ -155,6 +156,17 @@ export class Harness {
     this.config.provider.model = model.trim();
   }
 
+  /**
+   * Hot-swap the provider at runtime (settings page): rebuild the
+   * OpenAI-compatible provider (or mock) and update the config.
+   */
+  setProvider(
+    providerCfg: { type: 'openai' | 'mock'; model: string; apiKey?: string; baseURL?: string; temperature?: number },
+  ): void {
+    this.provider = buildProvider(providerCfg, { config: this.config });
+    this.config.provider = { ...this.config.provider, ...providerCfg };
+  }
+
   /** Tear down MCP connections. */
   async dispose(): Promise<void> {
     await this.mcp.disconnectAll();
@@ -172,7 +184,9 @@ function buildProvider(provider: HarnessConfig['provider'], opts: HarnessCreateO
   // unset: pick the first non-empty candidate instead of the first defined one.
   const candidates = [opts.apiKey, provider.apiKey, process.env.OPENAI_API_KEY, process.env.DEEPSEEK_API_KEY];
   const apiKey = candidates.find((v): v is string => typeof v === 'string' && v.trim().length > 0);
-  if (!apiKey) {
+  if (!apiKey && !provider.baseURL) {
+    // A key is required unless an explicit endpoint is given (local/self-hosted
+    // OpenAI-compatible servers like Ollama/vLLM may not require one).
     throw new Error(
       'no API key found: set config.provider.apiKey, OPENAI_API_KEY or DEEPSEEK_API_KEY ' +
         '(note: an empty value like DEEPSEEK_API_KEY="" counts as unset; pass --mock for an offline demo)',
@@ -183,7 +197,7 @@ function buildProvider(provider: HarnessConfig['provider'], opts: HarnessCreateO
   const usingDeepSeekKey = !openAIKey && !!deepSeekKey;
   return new OpenAICompatibleProvider({
     model: provider.model,
-    apiKey,
+    apiKey: apiKey ?? 'not-required',
     baseURL: provider.baseURL ?? (usingDeepSeekKey ? 'https://api.deepseek.com' : undefined),
     temperature: provider.temperature,
     maxRetries: provider.maxRetries,

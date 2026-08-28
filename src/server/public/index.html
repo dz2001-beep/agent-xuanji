@@ -28,6 +28,7 @@
       <nav class="nav-tabs">
         <button id="nav-chat" class="nav-tab active">💬 对话</button>
         <button id="nav-observatory" class="nav-tab">📊 观测台</button>
+        <button id="nav-settings" class="nav-tab">⚙️ 设置</button>
       </nav>
 
       <section class="card cwd-card">
@@ -139,6 +140,45 @@
         </div>
         <div class="obs-eval-hint">使用内置场景化评测集（examples/eval/demo-cases.json），以 mock 模式离线运行，产出通过率 / token / 工具效率指标报告。</div>
         <div id="obs-eval-report" class="obs-eval-report"></div>
+      </section>
+    </main>
+
+    <!-- ══════════════════ 设置页（后台设置）══════════════════ -->
+    <main id="settings-panel" class="main settings-panel hidden">
+      <div class="obs-head">
+        <h2 class="obs-title">⚙️ 后台设置</h2>
+      </div>
+
+      <section class="obs-section">
+        <div class="obs-section-title">🛰 模型服务商</div>
+        <div class="set-row">
+          <label class="set-label">厂商</label>
+          <select id="set-vendor" class="set-input"></select>
+          <div id="set-vendor-desc" class="set-hint"></div>
+        </div>
+        <div class="set-row">
+          <label class="set-label">API Key</label>
+          <input id="set-apikey" class="set-input" type="password" placeholder="sk-…（Ollama 本地模型可留空）" spellcheck="false" autocomplete="off" />
+        </div>
+        <div class="set-row">
+          <label class="set-label">Base URL</label>
+          <input id="set-baseurl" class="set-input" type="text" placeholder="https://api.xxx.com/v1" spellcheck="false" />
+        </div>
+        <div class="set-row">
+          <label class="set-label">模型</label>
+          <input id="set-model" class="set-input" type="text" placeholder="deepseek-chat" spellcheck="false" />
+        </div>
+        <div class="set-row">
+          <label class="set-label">模型列表</label>
+          <input id="set-models" class="set-input" type="text" placeholder="deepseek-chat, deepseek-reasoner（逗号分隔，供下拉切换）" spellcheck="false" />
+        </div>
+        <div class="set-row set-actions">
+          <span id="set-current" class="set-current"></span>
+          <button id="set-test" class="btn btn-ghost">🔌 测试连接</button>
+          <button id="set-save" class="btn btn-primary">💾 保存并生效</button>
+        </div>
+        <div id="set-result" class="set-result"></div>
+        <div class="set-note">兼容任意 OpenAI 兼容端点（DeepSeek / OpenAI / Moonshot / Ollama / 自定义）。保存后立即生效并持久化到 ~/.xuanji/settings.json；无 Key 时自动降级 mock 演示模式。</div>
       </section>
     </main>
   </div>

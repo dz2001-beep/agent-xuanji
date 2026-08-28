@@ -20,7 +20,13 @@ const MOCK_TURNS = [
   { content: '完成：收到 hi。' },
 ];
 
+let savedSettingsHome: string | undefined;
+
 beforeAll(async () => {
+  savedSettingsHome = process.env.XUANJI_HOME;
+  process.env.XUANJI_HOME = await (await import('node:fs')).promises.mkdtemp(
+    (await import('node:path')).join((await import('node:os')).tmpdir(), 'xuanji-server-'),
+  );
   harness = await Harness.create({
     config: {
       provider: { type: 'mock', model: 'mock-model' },
@@ -47,6 +53,8 @@ beforeAll(async () => {
 afterAll(async () => {
   await server.stop();
   await harness.dispose();
+  if (savedSettingsHome === undefined) delete process.env.XUANJI_HOME;
+  else process.env.XUANJI_HOME = savedSettingsHome;
 });
 
 describe('UiServer', () => {
@@ -201,6 +209,22 @@ describe('UiServer', () => {
     expect(body.error).toContain('weather');
   });
 
+  it('exposes vendor presets and current settings (masked)', async () => {
+    const res = await fetch(`${base}/api/settings`);
+    const data = (await res.json()) as { vendors: Array<{ id: string }>; current: { vendor: string; model: string } };
+    expect(data.vendors.map((v) => v.id)).toEqual(expect.arrayContaining(['deepseek', 'openai', 'ollama', 'custom']));
+    expect(data.current.model).toBeTruthy();
+  });
+
+  it('rejects settings test without a baseURL', async () => {
+    const res = await fetch(`${base}/api/settings/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vendor: 'custom', model: 'm' }),
+    });
+    expect(res.status).toBe(400);
+  });
+
   it('records runs and serves the full event chain for the trace view', async () => {
     const res = await fetch(`${base}/api/chat`, {
       method: 'POST',
@@ -268,4 +292,27 @@ describe('UiServer', () => {
       await h.dispose();
     }
   });
+  it('saves settings and hot-swaps the provider', async () => {
+    const res = await fetch(`${base}/api/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vendor: 'deepseek', baseURL: 'https://api.deepseek.com', apiKey: 'sk-test-123', model: 'deepseek-chat' }),
+    });
+    const body = (await res.json()) as { ok: boolean; model: string };
+    expect(body.ok).toBe(true);
+    expect(body.model).toBe('deepseek-chat');
+
+    // hot-swapped provider reflects the new model
+    const state = (await (await fetch(`${base}/api/state`)).json()) as { model: string };
+    expect(state.model).toBe('deepseek-chat');
+
+    // invalid: empty model rejected
+    const bad = await fetch(`${base}/api/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vendor: 'deepseek', model: '  ' }),
+    });
+    expect(bad.status).toBe(400);
+  });
+
 });

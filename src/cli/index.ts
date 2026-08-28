@@ -247,6 +247,21 @@ program
       const deepSeekEmpty = typeof envDeepSeek === 'string' && envDeepSeek.trim() === '';
       const cfg = await resolveConfig(opts as CliOptions);
 
+      // 应用后台设置页保存的厂商/Key/模型（若存在）
+      if (!opts.mock) {
+        const { loadSettings } = await import('../settings.js');
+        const saved = await loadSettings();
+        if (saved?.model && saved.baseURL) {
+          cfg.provider = {
+            type: 'openai',
+            model: saved.model,
+            ...(saved.apiKey ? { apiKey: saved.apiKey } : {}),
+            ...(saved.baseURL ? { baseURL: saved.baseURL } : {}),
+          };
+          if (Array.isArray(saved.models) && saved.models.length > 0) cfg.models = saved.models;
+        }
+      }
+
       // 空字符串 Key 是最常见的"以为设置了其实没有"的坑，给醒目标记。
       if (!opts.mock && (openAIEmpty || deepSeekEmpty)) {
         console.warn('');

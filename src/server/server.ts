@@ -112,6 +112,30 @@ export class UiServer {
       return this.handleEvalRun(req, res);
     }
 
+    // 后台设置：查询（脱敏）/ 保存（热切换）/ 测试连接
+    if (method === 'GET' && url.pathname === '/api/settings') {
+      const { loadSettings, VENDOR_PRESETS, maskKey, guessVendor } = await import('../settings.js');
+      const saved = await loadSettings();
+      const current = this.harness.config.provider;
+      return sendJson(res, 200, {
+        vendors: VENDOR_PRESETS,
+        current: {
+          vendor: saved?.vendor ?? (current.type === 'mock' ? 'mock' : guessVendor(current.baseURL ?? '')),
+          baseURL: current.baseURL ?? saved?.baseURL ?? '',
+          model: current.model,
+          keySet: !!(current.type !== 'mock' && (saved?.apiKey || process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY)),
+          keyMasked: saved?.apiKey ? maskKey(saved.apiKey) : '',
+          mock: current.type === 'mock',
+        },
+      });
+    }
+    if (method === 'POST' && url.pathname === '/api/settings') {
+      return this.handleSaveSettings(req, res);
+    }
+    if (method === 'POST' && url.pathname === '/api/settings/test') {
+      return this.handleTestSettings(req, res);
+    }
+
     if (method === 'POST' && url.pathname === '/api/chat') return this.handleChat(req, res);
     if (method === 'POST' && url.pathname === '/api/abort') {
       this.session.abort();
@@ -226,6 +250,52 @@ export class UiServer {
     } finally {
       for (const h of tempHarnesses) await h.dispose();
     }
+  }
+
+  /** Save settings: hot-swap provider, persist to ~/.xuanji/settings.json. */
+  private async handleSaveSettings(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    const { saveSettings, findVendor } = await import('../settings.js');
+    const body = await readJsonBody(req);
+    const vendor = String(body.vendor ?? '');
+    const model = String(body.model ?? '').trim();
+    const baseURL = String(body.baseURL ?? '').trim() || undefined;
+    const apiKey = String(body.apiKey ?? '').trim() || undefined;
+    if (!model) return sendJson(res, 400, { error: 'model 不能为空' });
+
+    const preset = findVendor(vendor);
+    const effectiveBaseURL = baseURL ?? preset?.baseURL ?? '';
+    const settings = { vendor, baseURL: effectiveBaseURL, apiKey, model };
+
+    try {
+      // Hot-swap: mock（无 baseURL 且无 key 时兜底 mock）→ 真实 provider
+      if (vendor === 'mock' || (!effectiveBaseURL && !apiKey)) {
+        this.harness.setProvider({ type: 'mock', model });
+        await saveSettings({ ...settings, apiKey: undefined });
+      } else {
+        this.harness.setProvider({ type: 'openai', model, apiKey, baseURL: effectiveBaseURL || undefined });
+        await saveSettings(settings);
+      }
+      this.log('info', `settings saved: vendor=${vendor} model=${model} baseURL=${effectiveBaseURL || '(mock)'}`);
+      return sendJson(res, 200, { ok: true, model, baseURL: effectiveBaseURL || '(mock)' });
+    } catch (err) {
+      return sendJson(res, 500, { error: `保存失败: ${(err as Error).message}` });
+    }
+  }
+
+  /** Test a candidate vendor/key/model without saving. */
+  private async handleTestSettings(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    const { testModelCall } = await import('../diagnose.js');
+    const { findVendor } = await import('../settings.js');
+    const body = await readJsonBody(req);
+    const model = String(body.model ?? '').trim();
+    const apiKey = String(body.apiKey ?? '').trim() || undefined;
+    const baseURL = String(body.baseURL ?? '').trim() || findVendor(String(body.vendor ?? ''))?.baseURL || '';
+    if (!model) return sendJson(res, 400, { error: 'model 不能为空' });
+    if (!baseURL) return sendJson(res, 400, { error: 'baseURL 不能为空（自定义厂商需填写端点）' });
+
+    this.log('info', `settings test: ${baseURL} model=${model}`);
+    const result = await testModelCall({ model, apiKey: apiKey ?? 'missing', baseURL, maxRetries: 0 });
+    return sendJson(res, 200, result);
   }
 
   private async serveStatic(pathname: string, res: http.ServerResponse): Promise<void> {

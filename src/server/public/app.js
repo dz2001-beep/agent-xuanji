@@ -58,6 +58,19 @@ const els = {
   obsEvalReport: $('obs-eval-report'),
   sfxToggle: $('sfx-toggle'),
   hudTime: $('hud-time'),
+  // 设置页
+  settingsPanel: $('settings-panel'),
+  navSettings: $('nav-settings'),
+  setVendor: $('set-vendor'),
+  setVendorDesc: $('set-vendor-desc'),
+  setApikey: $('set-apikey'),
+  setBaseurl: $('set-baseurl'),
+  setModel: $('set-model'),
+  setModels: $('set-models'),
+  setCurrent: $('set-current'),
+  setTest: $('set-test'),
+  setSave: $('set-save'),
+  setResult: $('set-result'),
 };
 
 const state = {
@@ -93,6 +106,7 @@ async function init() {
     bindEvents();
     bindApprovalEvents();
     bindObservatoryEvents();
+    bindSettingsEvents();
     bindSfxToggle();
     await refreshState();
     autoGrow();
@@ -422,11 +436,16 @@ let selectedRunId = null;
 
 function switchTab(tab) {
   const isChat = tab === 'chat';
+  const isObs = tab === 'observatory';
+  const isSet = tab === 'settings';
   els.mainChat.classList.toggle('hidden', !isChat);
-  els.observatory.classList.toggle('hidden', isChat);
+  els.observatory.classList.toggle('hidden', !isObs);
+  els.settingsPanel.classList.toggle('hidden', !isSet);
   els.navChat.classList.toggle('active', isChat);
-  els.navObservatory.classList.toggle('active', !isChat);
-  if (!isChat) void loadObservatory();
+  els.navObservatory.classList.toggle('active', isObs);
+  els.navSettings.classList.toggle('active', isSet);
+  if (isObs) void loadObservatory();
+  if (isSet) void loadSettingsPage();
 }
 
 async function loadObservatory() {
@@ -573,6 +592,113 @@ function renderEvalReport(report) {
     table.appendChild(tr);
   }
   els.obsEvalReport.appendChild(table);
+}
+
+/* ───────────────────────── 设置页 ───────────────────────── */
+
+let vendorPresets = [];
+
+async function loadSettingsPage() {
+  try {
+    const data = await fetchJson('/api/settings');
+    vendorPresets = data.vendors ?? [];
+    renderVendors(data.vendors ?? [], data.current);
+  } catch (err) {
+    els.setResult.textContent = `加载设置失败: ${err.message}`;
+  }
+}
+
+function renderVendors(vendors, current) {
+  els.setVendor.textContent = '';
+  for (const v of vendors) {
+    const opt = document.createElement('option');
+    opt.value = v.id;
+    opt.textContent = `${v.name} — ${v.description}`;
+    els.setVendor.appendChild(opt);
+  }
+  // 选中当前厂商
+  const vendorId = current?.vendor ?? vendors[0]?.id;
+  if (vendorId) els.setVendor.value = vendorId;
+
+  els.setBaseurl.value = current?.baseURL ?? '';
+  els.setModel.value = current?.model ?? '';
+  els.setApikey.value = '';
+  const cur = current;
+  els.setCurrent.textContent = cur
+    ? `当前：${cur.vendor} · ${cur.model}${cur.mock ? '（mock 离线）' : cur.keySet ? ' · Key 已设置' : ' · 未设置 Key'}${cur.keyMasked ? `（${cur.keyMasked}）` : ''}`
+    : '';
+  syncVendorFields();
+}
+
+function syncVendorFields() {
+  const v = vendorPresets.find((x) => x.id === els.setVendor.value);
+  if (!v) return;
+  els.setVendorDesc.textContent = v.description;
+  if (!els.setBaseurl.value && v.baseURL) els.setBaseurl.value = v.baseURL;
+  if (!els.setModel.value && v.defaultModel) els.setModel.value = v.defaultModel;
+  els.setApikey.placeholder = v.needsKey ? 'sk-…（必填）' : '本地模型无需 Key，可留空';
+}
+
+function collectSettings() {
+  return {
+    vendor: els.setVendor.value,
+    apiKey: els.setApikey.value.trim(),
+    baseURL: els.setBaseurl.value.trim(),
+    model: els.setModel.value.trim(),
+    models: els.setModels.value.split(/[,，]/).map((s) => s.trim()).filter(Boolean),
+  };
+}
+
+function bindSettingsEvents() {
+  els.navSettings.addEventListener('click', () => switchTab('settings'));
+  els.setVendor.addEventListener('change', syncVendorFields);
+
+  els.setTest.addEventListener('click', async () => {
+    const s = collectSettings();
+    if (!s.model) return (els.setResult.textContent = '请先填写模型名');
+    if (!s.baseURL) return (els.setResult.textContent = '请先填写 Base URL');
+    els.setResult.textContent = '⏳ 测试连接中…';
+    els.setResult.style.color = '';
+    try {
+      const res = await fetch('/api/settings/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(s),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      els.setResult.textContent = data.ok
+        ? `✅ 连接成功（${data.latencyMs}ms）`
+        : `❌ 连接失败: ${data.error}`;
+      els.setResult.style.color = data.ok ? 'var(--ok)' : 'var(--danger)';
+    } catch (err) {
+      els.setResult.textContent = `❌ 测试失败: ${err.message}`;
+      els.setResult.style.color = 'var(--danger)';
+    }
+  });
+
+  els.setSave.addEventListener('click', async () => {
+    const s = collectSettings();
+    if (!s.model) return (els.setResult.textContent = '请先填写模型名');
+    els.setResult.textContent = '⏳ 保存中…';
+    els.setResult.style.color = '';
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(s),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      els.setResult.textContent = `✅ 已保存并生效（${data.model}）`;
+      els.setResult.style.color = 'var(--ok)';
+      showBanner(`⚙️ 已切换到 ${data.baseURL} · ${data.model}`);
+      await refreshState();
+    } catch (err) {
+      els.setResult.textContent = `❌ 保存失败: ${err.message}`;
+      els.setResult.style.color = 'var(--danger)';
+    }
+  });
 }
 
 function bindObservatoryEvents() {
