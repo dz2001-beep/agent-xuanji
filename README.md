@@ -126,46 +126,19 @@ node dist/src/cli/index.js doctor
 
 ## 🎬 演示
 
-### 文字演示（真实输出）
+**① 对话**：提问后 agent 流式回答、依次调用工具（工具卡片可展开看参数与耗时）：
 
-一次"提问 → agent 调工具 → 链路观测"的完整流程（mock 演示）：
+![对话演示](docs/screenshot-chat.svg)
 
-```text
-$ xuanji trace report demo-run.jsonl
+**② 全链路观测**：「📊 观测台」查看历史运行，点击展开逐轮时间线 —— 模型输出、工具调用（参数/耗时/结果）、token 全部可见，问题可定位到具体一步：
 
-# 链路报告 — tr_mtcxho8m_kg0x49
-- 输入: 帮我看看项目结构，并搜索一下 MCP 是什么
-- 状态: ok | 轮次: 3 | 工具调用: 2
+![观测台 · 运行链路](docs/screenshot-observatory-trace.svg)
 
-## 时间线
-### 轮次 1
-- LLM 请求调用工具: fs.list_dir
-- 🔧 fs.list_dir { }
-  - ✅ 完成 (2ms) → [ "src", "test", "README.md" ]
-### 轮次 2
-- LLM 请求调用工具: web.search
-- 🔧 web.search { "query": "MCP" }
-  - ✅ 完成 (3ms) → MCP 是模型上下文协议（Model Context Protocol）
-### 轮次 3
-- LLM 输出: 项目包含 src/test/README.md；MCP 是模型上下文协议，用于连接外部工具。
+**③ 效果评估**：一键运行场景化评测集，产出通过率 / token / 工具效率指标报告，指标关联轨迹可溯源：
 
-## 工具调用序列
-`fs.list_dir → web.search`
-```
+![观测台 · 效果评估](docs/screenshot-observatory-eval.svg)
 
-### 📹 视频演示（录制建议）
-
-> 使用 macOS 自带录屏：`Shift + Cmd + 5` 选择区域后开始录制（约 2 分钟），录制完成后在此替换：
-> `![演示视频](docs/demo-video.mp4)`
-
-**录屏分镜（照着操作即可）：**
-
-1. **启动**：终端运行 `npm run ui`，浏览器打开工作台（显示深色界面）
-2. **提问**：输入 `帮我看看项目结构，并搜索一下 MCP 是什么`，回车
-3. **观察**：回答流式输出，工具卡片依次出现（`fs.list_dir` → `web.search`）
-4. **查看链路**：点回复下方「🔗 查看链路」→ 自动切到「📊 观测台」→ 展示逐轮时间线（模型输出、工具调用参数/耗时/结果、token）
-5. **效果评估**：点「▶ 运行评测集」→ 展示评估报告（通过率 / token / 工具效率表格）
-
+> 📹 想录真实视频：macOS 用 `Shift + Cmd + 5` 录制（约 2 分钟，操作：`npm run ui` → 提问 → 点「🔗 查看链路」→ 运行评测集），录好后放在 `docs/demo-video.mp4` 并在此替换 `![演示视频](docs/demo-video.mp4)`。
 
 ## 🖥 工作台使用指南
 
