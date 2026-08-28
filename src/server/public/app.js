@@ -16,6 +16,16 @@ const els = {
   sendBtn: $('send-btn'),
   stopBtn: $('stop-btn'),
   cwdPath: $('cwd-path'),
+  cwdName: $('cwd-name'),
+  wsManage: $('ws-manage'),
+  wsModal: $('ws-modal'),
+  wsList: $('ws-list'),
+  wsName: $('ws-name'),
+  wsPath: $('ws-path'),
+  wsBrowse: $('ws-browse'),
+  wsCreate: $('ws-create'),
+  wsError: $('ws-error'),
+  wsClose: $('ws-close'),
   kvProvider: $('kv-provider'),
   kvModel: $('kv-model'),
   toolsList: $('tools-list'),
@@ -233,6 +243,8 @@ async function refreshState() {
     state.cwd = s.cwd;
     els.cwdPath.textContent = s.cwd;
     els.cwdPath.title = s.cwd;
+    const activeWs = (s.workspaces ?? []).find((w) => w.active);
+    els.cwdName.textContent = activeWs?.name ?? '工作区';
     els.kvProvider.textContent = s.provider;
     renderModelSelect(s.models ?? [], s.model);
     els.toolsCount.textContent = s.tools.length;
@@ -271,9 +283,10 @@ function renderTags(ul, items) {
   }
 }
 
-async function fetchJson(url, body) {
+async function fetchJson(url, body, method) {
+  const m = method ?? (body ? 'POST' : 'GET');
   const res = await fetch(url, {
-    method: body ? 'POST' : 'GET',
+    method: m,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -315,10 +328,13 @@ function bindEvents() {
     });
   });
 
-  // 目录弹窗
-  els.cwdPath.addEventListener('click', () => void openDirModal());
-  $('cwd-open').addEventListener('click', () => void openDirModal());
-  els.cwdPath.title = '点击选择工作区';
+  // 工作区管理 + 目录弹窗（浏览回填）
+  els.cwdPath.addEventListener('click', () => void openWsModal());
+  els.wsManage.addEventListener('click', () => void openWsModal());
+  els.wsClose.addEventListener('click', closeWsModal);
+  els.wsBrowse.addEventListener('click', () => void openDirModal((p) => { els.wsPath.value = p; }));
+  els.wsCreate.addEventListener('click', () => void createWorkspace());
+  els.wsName.addEventListener('keydown', (e) => { if (e.key === 'Enter') void createWorkspace(); });
   $('dir-close').addEventListener('click', closeDirModal);
   $('dir-cancel').addEventListener('click', closeDirModal);
   els.dirConfirm.addEventListener('click', () => void confirmDir());
@@ -1052,11 +1068,14 @@ function safeJson(v) {
 
 /* ───────────────────────── 目录浏览器 ───────────────────────── */
 
-async function openDirModal() {
+let pendingDirPick = null;
+
+async function openDirModal(onPick) {
+  pendingDirPick = onPick ?? null;
   els.dirModal.classList.remove('hidden');
   els.dirError.classList.add('hidden');
-  await navigateDir(state.cwd);
-  els.dirInput.value = state.cwd;
+  await navigateDir(pendingDirPick ? (els.wsPath.value || state.cwd) : state.cwd);
+  els.dirInput.value = pendingDirPick ? (els.wsPath.value || state.cwd) : state.cwd;
   setTimeout(() => els.dirInput.focus(), 50);
 }
 
@@ -1139,6 +1158,12 @@ function renderDirList(data) {
 }
 
 async function confirmDir() {
+  if (pendingDirPick) {
+    pendingDirPick(state.currentDir);
+    pendingDirPick = null;
+    closeDirModal();
+    return;
+  }
   try {
     await fetchJson('/api/cwd', { path: state.currentDir });
     state.cwd = state.currentDir;
@@ -1154,6 +1179,115 @@ async function confirmDir() {
 function showDirError(msg) {
   els.dirError.textContent = msg;
   els.dirError.classList.remove('hidden');
+}
+
+/* ───────────────────────── 工作区管理 ───────────────────────── */
+
+async function openWsModal() {
+  els.wsModal.classList.remove('hidden');
+  els.wsError.classList.add('hidden');
+  await loadWorkspaces();
+}
+
+function closeWsModal() {
+  els.wsModal.classList.add('hidden');
+}
+
+async function loadWorkspaces() {
+  try {
+    const { workspaces } = await fetchJson('/api/workspaces');
+    renderWsList(workspaces);
+  } catch (err) {
+    els.wsError.textContent = `加载失败: ${err.message}`;
+    els.wsError.classList.remove('hidden');
+  }
+}
+
+function renderWsList(list) {
+  els.wsList.textContent = '';
+  for (const w of list) {
+    const row = document.createElement('div');
+    row.className = `ws-row${w.active ? ' active' : ''}`;
+    const left = document.createElement('div');
+    left.className = 'ws-row-left';
+    const name = document.createElement('div');
+    name.className = 'ws-row-name';
+    name.textContent = `${w.active ? '● ' : ''}${w.name}`;
+    const path = document.createElement('div');
+    path.className = 'ws-row-path';
+    path.textContent = w.path;
+    left.append(name, path);
+    row.appendChild(left);
+    if (!w.active) {
+      const act = document.createElement('button');
+      act.className = 'btn btn-ghost btn-sm';
+      act.textContent = '切换';
+      act.addEventListener('click', () => void activateWorkspace(w.id));
+      row.appendChild(act);
+    }
+    const del = document.createElement('button');
+    del.className = 'btn btn-ghost btn-sm';
+    del.textContent = '🗑';
+    del.title = '删除该工作区';
+    del.addEventListener('click', () => void removeWorkspace(w));
+    row.appendChild(del);
+    els.wsList.appendChild(row);
+  }
+}
+
+async function activateWorkspace(id) {
+  try {
+    await fetchJson('/api/workspaces/activate', { id });
+    closeWsModal();
+    resetChatView();
+    showBanner(`📁 已切换到工作区（新会话从零开始，互不干扰）`);
+    await refreshState();
+  } catch (err) {
+    showWsError(err.message);
+  }
+}
+
+async function createWorkspace() {
+  const name = els.wsName.value.trim();
+  const path = els.wsPath.value.trim();
+  if (!name) return showWsError('请填写工作区名称');
+  if (!path) return showWsError('请选择工作区目录（可手动输入或点 📂 浏览）');
+  try {
+    const data = await fetchJson('/api/workspaces', { name, path });
+    closeWsModal();
+    els.wsName.value = '';
+    els.wsPath.value = '';
+    resetChatView();
+    showBanner(`📁 已创建并进入工作区「${data.workspace.name}」`);
+    await refreshState();
+  } catch (err) {
+    showWsError(err.message);
+  }
+}
+
+async function removeWorkspace(w) {
+  if (!confirm(`删除工作区「${w.name}」？（对话历史会一并清除）`)) return;
+  try {
+    const { workspaces } = await fetchJson(`/api/workspaces/${w.id}`, undefined, 'DELETE');
+    if (w.active) resetChatView();
+    renderWsList(workspaces);
+    await refreshState();
+  } catch (err) {
+    showWsError(err.message);
+  }
+}
+
+function showWsError(msg) {
+  els.wsError.textContent = msg;
+  els.wsError.classList.remove('hidden');
+}
+
+/** 切换/新建工作区后：清空当前消息视图，从空会话开始 */
+function resetChatView() {
+  els.messages.querySelectorAll('.msg').forEach((m) => m.remove());
+  els.emptyState?.classList.remove('hidden');
+  toolCards.clear();
+  currentAssistant = null;
 }
 
 /* ───────────────────────── 其它 ───────────────────────── */

@@ -1,15 +1,22 @@
 /**
  * ChatSession — one interactive conversation against a Harness.
  *
- * Owns the multi-turn history, the session working directory and the
- * running/cancel lifecycle used by the web UI. Each `chat()` runs the Agent
- * Loop with the accumulated history and streams typed frames to a callback.
+ * Owns MULTIPLE isolated workspaces (each with its own directory + history),
+ * the running/cancel lifecycle used by the web UI, plus the run/链路 records
+ * for the observatory. Each `chat()` runs the Agent Loop for the ACTIVE
+ * workspace with its accumulated history and streams typed frames.
  */
 
 import { promises as fs } from 'node:fs';
 import type { AgentEvent } from '../loop/events.js';
 import type { Message } from '../types.js';
 import type { Harness } from '../harness/harness.js';
+import {
+  createWorkspaceId,
+  loadWorkspaces,
+  saveWorkspaces,
+  type WorkspaceMeta,
+} from '../workspaces.js';
 
 /** Cap on how many history messages are replayed into the model. */
 const MAX_HISTORY = 60;
@@ -38,19 +45,103 @@ export interface RunRecord {
 
 const MAX_RUNS = 20;
 
+interface Workspace {
+  id: string;
+  name: string;
+  path: string;
+  history: Message[];
+}
+
 export class ChatSession {
+  /** Active workspace directory (kept in sync with the active workspace). */
   cwd: string;
-  history: Message[] = [];
   private readonly harness: Harness;
   private busy = false;
   private abortController: AbortController | null = null;
   private readonly pendingApprovals = new Map<string, (approved: boolean) => void>();
   /** Full event chains of recent runs (链路数据，供 UI 查看). */
   private readonly runs: RunRecord[] = [];
+  private workspaces: Workspace[] = [];
+  private activeWorkspaceId = '';
 
   constructor(harness: Harness, cwd = process.cwd()) {
     this.harness = harness;
     this.cwd = cwd;
+    void this.initWorkspaces(cwd);
+  }
+
+  private async initWorkspaces(defaultCwd: string): Promise<void> {
+    const saved = await loadWorkspaces();
+    if (saved.length > 0) {
+      this.workspaces = saved.map((m) => ({ ...m, history: [] }));
+      this.activeWorkspaceId = saved[0]!.id;
+      this.cwd = saved[0]!.path;
+    } else {
+      const ws: Workspace = {
+        id: createWorkspaceId(),
+        name: '默认工作区',
+        path: defaultCwd,
+        history: [],
+      };
+      this.workspaces = [ws];
+      this.activeWorkspaceId = ws.id;
+      this.cwd = ws.path;
+    }
+  }
+
+  /** History of the ACTIVE workspace. */
+  get history(): Message[] {
+    return this.activeWorkspace()?.history ?? [];
+  }
+
+  private activeWorkspace(): Workspace | undefined {
+    return this.workspaces.find((w) => w.id === this.activeWorkspaceId);
+  }
+
+  /* ------------------------- 多工作区管理 ------------------------- */
+
+  get workspaceList(): Array<{ id: string; name: string; path: string; active: boolean }> {
+    return this.workspaces.map((w) => ({
+      id: w.id,
+      name: w.name,
+      path: w.path,
+      active: w.id === this.activeWorkspaceId,
+    }));
+  }
+
+  async createWorkspace(name: string, path: string): Promise<{ id: string; name: string; path: string; active: boolean }> {
+    if (!name.trim()) throw new Error('工作区名称不能为空');
+    const stat = await fs.stat(path).catch(() => null);
+    if (!stat?.isDirectory()) throw new Error(`目录不存在或不是目录: ${path}`);
+    const ws: Workspace = { id: createWorkspaceId(), name: name.trim(), path, history: [] };
+    this.workspaces.push(ws);
+    await this.persist();
+    return { id: ws.id, name: ws.name, path: ws.path, active: ws.id === this.activeWorkspaceId };
+  }
+
+  /** Activate another workspace (session cwd + history switch). */
+  async activateWorkspace(id: string): Promise<void> {
+    const ws = this.workspaces.find((w) => w.id === id);
+    if (!ws) throw new Error(`工作区不存在: ${id}`);
+    this.activeWorkspaceId = id;
+    this.cwd = ws.path;
+  }
+
+  async removeWorkspace(id: string): Promise<void> {
+    if (this.workspaces.length <= 1) throw new Error('至少保留一个工作区');
+    const idx = this.workspaces.findIndex((w) => w.id === id);
+    if (idx < 0) throw new Error(`工作区不存在: ${id}`);
+    this.workspaces.splice(idx, 1);
+    if (this.activeWorkspaceId === id) {
+      this.activeWorkspaceId = this.workspaces[0]!.id;
+      this.cwd = this.workspaces[0]!.path;
+    }
+    await this.persist();
+  }
+
+  private async persist(): Promise<void> {
+    const metas: WorkspaceMeta[] = this.workspaces.map(({ id, name, path }) => ({ id, name, path }));
+    await saveWorkspaces(metas);
   }
 
   /** Run summaries for the UI (id / input / status / metrics). */
@@ -89,6 +180,7 @@ export class ChatSession {
   get state() {
     return {
       cwd: this.cwd,
+      workspaces: this.workspaceList,
       provider: this.harness.provider.name,
       model: this.harness.config.provider.model,
       models: this.harness.config.models,
@@ -120,12 +212,15 @@ export class ChatSession {
     }
   }
 
-  /** Switch the session working directory (must exist and be a directory). */
+  /** Switch the ACTIVE workspace's directory (must exist and be a directory). */
   async setCwd(p: string): Promise<void> {
     const stat = await fs.stat(p).catch(() => null);
     if (!stat) throw new Error(`目录不存在: ${p}`);
     if (!stat.isDirectory()) throw new Error(`不是目录: ${p}`);
+    const ws = this.activeWorkspace();
+    if (ws) ws.path = p;
     this.cwd = p;
+    await this.persist();
   }
 
   /** Cancel the in-flight run. */
@@ -134,7 +229,8 @@ export class ChatSession {
   }
 
   clearHistory(): void {
-    this.history = [];
+    const ws = this.activeWorkspace();
+    if (ws) ws.history = [];
   }
 
   async chat(message: string, emit: (frame: ChatFrame) => void): Promise<void> {
@@ -186,10 +282,12 @@ export class ChatSession {
       });
 
       // Append the assistant side of this turn to the conversation history.
+      const ws = this.activeWorkspace();
       const assistantMsgs = result.messages.filter((m) => m.role !== 'system');
-      this.history.push(...assistantMsgs);
+      if (ws) ws.history.push(...assistantMsgs);
       if (this.history.length > MAX_HISTORY) {
-        this.history = this.history.slice(-MAX_HISTORY);
+        const trimmed = this.history.slice(-MAX_HISTORY);
+        if (ws) ws.history = trimmed;
       }
 
       // Surface run-level failures (status !== 'ok') with their reason, so the

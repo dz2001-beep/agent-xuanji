@@ -56,10 +56,11 @@
       <section class="card cwd-card">
         <div class="card-title">
           <span>📁 工作区</span>
-          <button id="cwd-open" class="btn btn-ghost btn-sm" title="选择工作区（agent 读写文件、执行命令都在这里）">切换</button>
+          <button id="ws-manage" class="btn btn-ghost btn-sm" title="管理工作区（新建/切换/删除，互相隔离）">管理</button>
         </div>
+        <div id="cwd-name" class="cwd-name"></div>
         <div id="cwd-path" class="cwd-path" title=""></div>
-        <div class="cwd-note">agent 生成的文件、命令输出都在此目录，与产品代码隔离</div>
+        <div class="cwd-note">不同工作区隔离目录与对话历史，互不干扰</div>
       </section>
 
       <section class="card cwd-card">
@@ -203,6 +204,24 @@
         <div class="set-note">兼容任意 OpenAI 兼容端点（DeepSeek / OpenAI / Moonshot / Ollama / 自定义）。保存后立即生效并持久化到 ~/.xuanji/settings.json；无 Key 时自动降级 mock 演示模式。</div>
       </section>
     </main>
+  </div>
+
+  <!-- ══════════════════ 工作区管理弹窗 ══════════════════ -->
+  <div id="ws-modal" class="modal-mask hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <span class="modal-title">📁 工作区管理</span>
+        <button id="ws-close" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <div id="ws-list" class="ws-list"></div>
+      <div class="ws-new">
+        <input id="ws-name" class="input" placeholder="工作区名称（如：项目A）" spellcheck="false" />
+        <input id="ws-path" class="input" placeholder="/path/to/dir" spellcheck="false" />
+        <button id="ws-browse" class="btn btn-ghost">📂 浏览</button>
+        <button id="ws-create" class="btn btn-primary">＋ 新建</button>
+      </div>
+      <div id="ws-error" class="dir-error hidden"></div>
+    </div>
   </div>
 
   <!-- ══════════════════ 目录选择弹窗 ══════════════════ -->

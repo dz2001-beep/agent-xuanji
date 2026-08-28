@@ -315,4 +315,52 @@ describe('UiServer', () => {
     expect(bad.status).toBe(400);
   });
 
+  it('manages multiple isolated workspaces', async () => {
+    // list: default workspace exists
+    const list0 = (await (await fetch(`${base}/api/workspaces`)).json()) as { workspaces: Array<{ id: string; name: string; active: boolean }> };
+    expect(list0.workspaces.length).toBeGreaterThan(0);
+    expect(list0.workspaces.some((w) => w.active)).toBe(true);
+
+    // create + auto-activate a new workspace
+    const created = (await (
+      await fetch(`${base}/api/workspaces`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: '项目A', path: process.cwd() }),
+      })
+    ).json()) as { ok: boolean; workspace: { id: string; name: string } };
+    expect(created.ok).toBe(true);
+    expect(created.workspace.name).toBe('项目A');
+
+    // activate a workspace by id
+    const firstId = list0.workspaces[0]!.id;
+    const activated = (await (
+      await fetch(`${base}/api/workspaces/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: firstId }),
+      })
+    ).json()) as { ok: boolean; cwd: string };
+    expect(activated.ok).toBe(true);
+    expect(activated.cwd).toBe(process.cwd());
+
+    // state reflects workspace list
+    const state = (await (await fetch(`${base}/api/state`)).json()) as { workspaces: Array<{ id: string; active: boolean }> };
+    expect(state.workspaces.length).toBe(2);
+
+    // invalid workspace path rejected
+    const bad = await fetch(`${base}/api/workspaces`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'bad', path: '/definitely/not/here-xyz' }),
+    });
+    expect(bad.status).toBe(500);
+
+    // delete non-active workspace (keep at least one)
+    const del = await fetch(`${base}/api/workspaces/${created.workspace.id}`, { method: 'DELETE' });
+    expect(del.status).toBe(200);
+    const after = (await (await fetch(`${base}/api/workspaces`)).json()) as { workspaces: unknown[] };
+    expect(after.workspaces.length).toBe(1);
+  });
+
 });

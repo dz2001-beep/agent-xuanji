@@ -148,6 +148,31 @@ export class UiServer {
       this.log('info', `cwd → ${this.session.cwd}`);
       return sendJson(res, 200, { ok: true, cwd: this.session.cwd });
     }
+
+    // 多工作区管理：列表 / 新建 / 激活 / 删除
+    if (method === 'GET' && url.pathname === '/api/workspaces') {
+      return sendJson(res, 200, { workspaces: this.session.workspaceList });
+    }
+    if (method === 'POST' && url.pathname === '/api/workspaces') {
+      const { name, path } = await readJsonBody(req);
+      const ws = await this.session.createWorkspace(String(name), String(path));
+      await this.session.activateWorkspace(ws.id);
+      this.log('info', `workspace created + activated: ${ws.name} → ${ws.path}`);
+      return sendJson(res, 200, { ok: true, workspace: ws });
+    }
+    if (method === 'POST' && url.pathname === '/api/workspaces/activate') {
+      const { id } = await readJsonBody(req);
+      await this.session.activateWorkspace(String(id));
+      this.log('info', `workspace activated: ${id} → ${this.session.cwd}`);
+      return sendJson(res, 200, { ok: true, cwd: this.session.cwd });
+    }
+    if (method === 'DELETE' && url.pathname.startsWith('/api/workspaces/')) {
+      const id = decodeURIComponent(url.pathname.slice('/api/workspaces/'.length));
+      await this.session.removeWorkspace(id);
+      this.log('info', `workspace removed: ${id}`);
+      return sendJson(res, 200, { ok: true, workspaces: this.session.workspaceList });
+    }
+
     if (method === 'POST' && url.pathname === '/api/model') {
       const { model } = await readJsonBody(req);
       await this.session.setModel(String(model));
