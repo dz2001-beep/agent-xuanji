@@ -1,65 +1,103 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif">
   <defs>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#22d3ee"/>
-      <stop offset="1" stop-color="#a78bfa"/>
+      <stop offset="0" stop-color="#00a2ff"/>
+      <stop offset="1" stop-color="#4f8cff"/>
     </linearGradient>
+    <radialGradient id="glow" cx="80%" cy="0%" r="80%">
+      <stop offset="0" stop-color="#00a2ff" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#020a16" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect width="1200" height="700" rx="14" fill="#0b0e14"/>
-  <rect x="14" y="14" width="240" height="672" rx="12" fill="#12161f" stroke="#ffffff" stroke-opacity="0.07"/>
-  <!-- 品牌 -->
-  <text x="28" y="46" font-size="20" font-weight="800" font-family="'JetBrains Mono', Menlo, monospace" fill="url(#accent)">&gt;_</text>
-  <text x="70" y="42" font-size="14" font-weight="700" fill="#e6e9f0">璇玑<span fill="#6b7484"> xuanji</span></text>
-  <text x="70" y="58" font-size="10.5" fill="#6b7484">agent harness · 工作台</text>
-  <!-- 导航 -->
-  <rect x="24" y="70" width="110" height="30" rx="8" fill="#22d3ee" fill-opacity="0.12" stroke="#22d3ee" stroke-opacity="0.35"/>
-  <text x="79" y="90" font-size="12.5" fill="#22d3ee" text-anchor="middle">💬 对话</text>
-  <rect x="142" y="70" width="100" height="30" rx="8" fill="#ffffff" fill-opacity="0.03"/>
-  <text x="192" y="90" font-size="12.5" fill="#9aa3b2" text-anchor="middle">📊 观测台</text>
-  <!-- 工作区卡 -->
-  <rect x="24" y="112" width="220" height="66" rx="10" fill="#ffffff" fill-opacity="0.02" stroke="#ffffff" stroke-opacity="0.07"/>
-  <text x="34" y="132" font-size="11.5" fill="#9aa3b2">📁 工作区</text>
-  <text x="34" y="152" font-size="11" fill="#e6e9f0" font-family="'JetBrains Mono', Menlo, monospace">/Users/dz/workspace/个人作品</text>
-  <text x="34" y="168" font-size="11" fill="#e6e9f0" font-family="'JetBrains Mono', Menlo, monospace">/harness-kit/examples</text>
-  <!-- 工具卡 -->
-  <rect x="24" y="190" width="220" height="90" rx="10" fill="#ffffff" fill-opacity="0.02" stroke="#ffffff" stroke-opacity="0.07"/>
-  <text x="34" y="210" font-size="11.5" fill="#9aa3b2">🧰 工具 6</text>
-  <g font-size="10.5" font-family="'JetBrains Mono', Menlo, monospace">
-    <rect x="34" y="222" width="96" height="20" rx="6" fill="#ffffff" fill-opacity="0.04" stroke="#ffffff" stroke-opacity="0.08"/><text x="44" y="236" fill="#9aa3b2">fs.list_dir</text>
-    <rect x="138" y="222" width="96" height="20" rx="6" fill="#ffffff" fill-opacity="0.04" stroke="#ffffff" stroke-opacity="0.08"/><text x="148" y="236" fill="#9aa3b2">web.search</text>
-    <rect x="34" y="248" width="96" height="20" rx="6" fill="#22d3ee" fill-opacity="0.08" stroke="#22d3ee" stroke-opacity="0.25"/><text x="44" y="262" fill="#22d3ee">weather.current</text>
+
+  <!-- 页面背景（面板四周可见） -->
+  <rect width="1200" height="780" fill="#020a16"/>
+  <rect width="1200" height="780" fill="url(#glow)"/>
+  <g stroke="#00a2ff" stroke-opacity="0.05" stroke-width="1">
+    <path d="M0 40 H1200 M0 80 H1200 M0 120 H1200 M0 160 H1200 M0 200 H1200 M0 240 H1200 M0 280 H1200 M0 320 H1200 M0 360 H1200 M0 400 H1200 M0 440 H1200 M0 480 H1200 M0 520 H1200 M0 560 H1200 M0 600 H1200 M0 640 H1200 M0 680 H1200 M0 720 H1200"/>
+    <path d="M40 0 V780 M80 0 V780 M120 0 V780 M160 0 V780 M200 0 V780 M240 0 V780 M280 0 V780 M320 0 V780 M360 0 V780 M400 0 V780 M440 0 V780 M480 0 V780 M520 0 V780 M560 0 V780 M600 0 V780 M640 0 V780 M680 0 V780 M720 0 V780 M760 0 V780 M800 0 V780 M840 0 V780 M880 0 V780 M920 0 V780 M960 0 V780 M1000 0 V780 M1040 0 V780 M1080 0 V780 M1120 0 V780 M1160 0 V780"/>
   </g>
+
+  <!-- 悬浮面板外发光 + 面板本体（半透明，能看到背景） -->
+  <rect x="36" y="36" width="1128" height="708" rx="14" fill="#00a2ff" fill-opacity="0.07"/>
+  <rect x="40" y="40" width="1120" height="700" rx="14" fill="#081e3c" fill-opacity="0.62" stroke="#00a2ff" stroke-opacity="0.35" stroke-width="1.2"/>
+  <!-- 面板内淡网格（模拟透出背景） -->
+  <g stroke="#00a2ff" stroke-opacity="0.02" stroke-width="1">
+    <path d="M40 100 H1160 M40 160 H1160 M40 220 H1160 M40 280 H1160 M40 340 H1160 M40 400 H1160 M40 460 H1160 M40 520 H1160 M40 580 H1160 M40 640 H1160 M40 700 H1160"/>
+    <path d="M100 40 V740 M160 40 V740 M220 40 V740 M280 40 V740 M340 40 V740 M400 40 V740 M460 40 V740 M520 40 V740 M580 40 V740 M640 40 V740 M700 40 V740 M760 40 V740 M820 40 V740 M880 40 V740 M940 40 V740 M1000 40 V740 M1060 40 V740 M1120 40 V740"/>
+  </g>
+
+  <!-- 侧边栏 -->
+  <rect x="54" y="54" width="232" height="672" rx="10" fill="#0a2440" fill-opacity="0.5" stroke="#00a2ff" stroke-opacity="0.22"/>
+  <!-- HUD 状态行 -->
+  <rect x="66" y="66" width="208" height="26" rx="7" fill="#00a2ff" fill-opacity="0.08" stroke="#00a2ff" stroke-opacity="0.25"/>
+  <circle cx="76" cy="79" r="3.5" fill="#00d4b0"/>
+  <text x="86" y="83" font-size="10" fill="#5a8bb0" font-family="'JetBrains Mono', Menlo, monospace">SYSTEM ONLINE</text>
+  <text x="260" y="83" font-size="10" fill="#9cc8e8" font-family="'JetBrains Mono', Menlo, monospace" text-anchor="end">15:42:07</text>
+  <!-- 品牌 -->
+  <text x="66" y="122" font-size="19" font-weight="800" font-family="'JetBrains Mono', Menlo, monospace" fill="url(#accent)">&gt;_</text>
+  <text x="100" y="118" font-size="13.5" font-weight="700" fill="#e8f4ff">璇玑</text>
+  <text x="140" y="118" font-size="11" fill="#5a8bb0" font-family="'JetBrains Mono', Menlo, monospace">xuanji</text>
+  <text x="100" y="134" font-size="10" fill="#5a8bb0">agent harness · 工作台</text>
+  <!-- 导航 -->
+  <rect x="66" y="146" width="64" height="26" rx="7" fill="#00a2ff" fill-opacity="0.14" stroke="#00a2ff" stroke-opacity="0.4"/>
+  <text x="98" y="163" font-size="11" fill="#00a2ff" text-anchor="middle">💬 对话</text>
+  <rect x="136" y="146" width="68" height="26" rx="7" fill="#ffffff" fill-opacity="0.03"/>
+  <text x="170" y="163" font-size="11" fill="#9cc8e8" text-anchor="middle">📊 观测台</text>
+  <rect x="210" y="146" width="60" height="26" rx="7" fill="#ffffff" fill-opacity="0.03"/>
+  <text x="240" y="163" font-size="11" fill="#9cc8e8" text-anchor="middle">⚙️ 设置</text>
+  <!-- 工作区 -->
+  <rect x="66" y="184" width="206" height="60" rx="9" fill="#ffffff" fill-opacity="0.03" stroke="#00a2ff" stroke-opacity="0.15"/>
+  <text x="76" y="202" font-size="11" fill="#9cc8e8">📁 工作区</text>
+  <text x="76" y="220" font-size="10" fill="#e8f4ff" font-family="'JetBrains Mono', Menlo, monospace">/Users/dz/workspace/个人作品</text>
+  <text x="76" y="234" font-size="10" fill="#e8f4ff" font-family="'JetBrains Mono', Menlo, monospace">/harness-kit/examples</text>
+  <!-- 工具 -->
+  <rect x="66" y="256" width="206" height="84" rx="9" fill="#ffffff" fill-opacity="0.03" stroke="#00a2ff" stroke-opacity="0.15"/>
+  <text x="76" y="274" font-size="11" fill="#9cc8e8">🧰 工具 6</text>
+  <g font-size="9.5" font-family="'JetBrains Mono', Menlo, monospace">
+    <rect x="76" y="284" width="92" height="18" rx="5" fill="#ffffff" fill-opacity="0.05"/><text x="86" y="297" fill="#9cc8e8">fs.list_dir</text>
+    <rect x="174" y="284" width="88" height="18" rx="5" fill="#ffffff" fill-opacity="0.05"/><text x="184" y="297" fill="#9cc8e8">web.search</text>
+    <rect x="76" y="308" width="92" height="18" rx="5" fill="#00a2ff" fill-opacity="0.1" stroke="#00a2ff" stroke-opacity="0.3"/><text x="86" y="321" fill="#00a2ff">weather.current</text>
+  </g>
+
   <!-- 主区 -->
-  <rect x="268" y="14" width="918" height="672" rx="12" fill="#0f131c" stroke="#ffffff" stroke-opacity="0.07"/>
-  <!-- 技能提示条 -->
-  <rect x="292" y="30" width="870" height="32" rx="9" fill="#a78bfa" fill-opacity="0.08" stroke="#a78bfa" stroke-opacity="0.25"/>
-  <text x="306" y="51" font-size="11.5" fill="#a78bfa">✨ 已自动注入技能：「code-review」，正在执行</text>
+  <rect x="296" y="54" width="850" height="672" rx="10" fill="#081e3c" fill-opacity="0.35"/>
+  <!-- 技能提示 -->
+  <rect x="316" y="70" width="810" height="28" rx="8" fill="#4f8cff" fill-opacity="0.1" stroke="#4f8cff" stroke-opacity="0.3"/>
+  <text x="330" y="89" font-size="11" fill="#9cc8e8">✨ 已自动注入技能：「code-review」，正在执行</text>
   <!-- 用户消息 -->
-  <rect x="620" y="76" width="540" height="44" rx="12" fill="#22d3ee" fill-opacity="0.12" stroke="#22d3ee" stroke-opacity="0.3"/>
-  <text x="640" y="103" font-size="13.5" fill="#e6e9f0">帮我看看项目结构，并搜索一下 MCP 是什么</text>
-  <!-- 助手：工具卡片 -->
-  <rect x="300" y="76" width="30" height="30" rx="8" fill="url(#accent)"/>
-  <text x="315" y="97" font-size="15" font-weight="800" fill="#0b0e14" text-anchor="middle">✦</text>
-  <rect x="342" y="76" width="262" height="46" rx="9" fill="#ffffff" fill-opacity="0.02" stroke="#22d3ee" stroke-opacity="0.4" stroke-width="1.5"/>
-  <text x="358" y="97" font-size="12" font-family="'JetBrains Mono', Menlo, monospace" fill="#e6e9f0">📁 fs.list_dir</text>
-  <text x="560" y="97" font-size="10.5" fill="#34d399" font-family="'JetBrains Mono', Menlo, monospace" text-anchor="end">✔ 2ms</text>
-  <text x="358" y="114" font-size="10.5" fill="#6b7484" font-family="'JetBrains Mono', Menlo, monospace">{"path": "."}  ▾</text>
-  <rect x="342" y="130" width="262" height="46" rx="9" fill="#ffffff" fill-opacity="0.02" stroke="#22d3ee" stroke-opacity="0.4" stroke-width="1.5"/>
-  <text x="358" y="151" font-size="12" font-family="'JetBrains Mono', Menlo, monospace" fill="#e6e9f0">🔧 web.search</text>
-  <text x="560" y="151" font-size="10.5" fill="#34d399" font-family="'JetBrains Mono', Menlo, monospace" text-anchor="end">✔ 3ms</text>
-  <text x="358" y="168" font-size="10.5" fill="#6b7484" font-family="'JetBrains Mono', Menlo, monospace">{"query": "MCP"}  ▾</text>
+  <rect x="610" y="110" width="516" height="40" rx="11" fill="#00a2ff" fill-opacity="0.14" stroke="#00a2ff" stroke-opacity="0.35"/>
+  <text x="630" y="135" font-size="13" fill="#e8f4ff">帮我看看项目结构，并搜索一下 MCP 是什么</text>
+  <!-- 工具卡片 -->
+  <rect x="330" y="110" width="28" height="28" rx="8" fill="url(#accent)"/>
+  <text x="344" y="130" font-size="14" font-weight="800" fill="#020a16" text-anchor="middle">✦</text>
+  <rect x="368" y="110" width="230" height="42" rx="8" fill="#ffffff" fill-opacity="0.03" stroke="#00a2ff" stroke-opacity="0.4"/>
+  <text x="382" y="130" font-size="11.5" font-family="'JetBrains Mono', Menlo, monospace" fill="#e8f4ff">📁 fs.list_dir</text>
+  <text x="560" y="130" font-size="10" fill="#00d4b0" font-family="'JetBrains Mono', Menlo, monospace" text-anchor="end">✔ 2ms</text>
+  <text x="382" y="145" font-size="10" fill="#5a8bb0" font-family="'JetBrains Mono', Menlo, monospace">{"path": "."}  ▾</text>
+  <rect x="368" y="158" width="230" height="42" rx="8" fill="#ffffff" fill-opacity="0.03" stroke="#00a2ff" stroke-opacity="0.4"/>
+  <text x="382" y="178" font-size="11.5" font-family="'JetBrains Mono', Menlo, monospace" fill="#e8f4ff">🔧 web.search</text>
+  <text x="560" y="178" font-size="10" fill="#00d4b0" font-family="'JetBrains Mono', Menlo, monospace" text-anchor="end">✔ 3ms</text>
+  <text x="382" y="193" font-size="10" fill="#5a8bb0" font-family="'JetBrains Mono', Menlo, monospace">{"query": "MCP"}  ▾</text>
   <!-- 回答 -->
-  <text x="342" y="208" font-size="13.5" font-weight="700" fill="#e6e9f0">项目结构包含：</text>
-  <text x="342" y="228" font-size="12.5" fill="#9aa3b2">· src/ 核心代码　· test/ 测试　· README.md</text>
-  <text x="342" y="248" font-size="12.5" fill="#9aa3b2">MCP（Model Context Protocol）是模型上下文协议，</text>
-  <text x="342" y="266" font-size="12.5" fill="#9aa3b2">用于连接外部工具与数据源。</text>
-  <text x="342" y="296" font-size="10.5" fill="#6b7484" font-family="'JetBrains Mono', Menlo, monospace">· ok · 3 轮 · 2 次工具调用 · 486 tokens</text>
-  <!-- 链路按钮 -->
-  <rect x="342" y="310" width="120" height="28" rx="8" fill="#22d3ee" fill-opacity="0.1" stroke="#22d3ee" stroke-opacity="0.35"/>
-  <text x="402" y="329" font-size="12" fill="#22d3ee" text-anchor="middle">🔗 查看链路</text>
+  <text x="368" y="232" font-size="13" font-weight="700" fill="#e8f4ff">项目结构包含：</text>
+  <text x="368" y="252" font-size="12" fill="#9cc8e8">· src/ 核心代码　· test/ 测试　· README.md</text>
+  <text x="368" y="270" font-size="12" fill="#9cc8e8">MCP（Model Context Protocol）是模型上下文协议，用于连接外部工具与数据源。</text>
+  <text x="368" y="296" font-size="10" fill="#5a8bb0" font-family="'JetBrains Mono', Menlo, monospace">· ok · 3 轮 · 2 次工具调用 · 486 tokens</text>
+  <rect x="368" y="310" width="118" height="26" rx="7" fill="#00a2ff" fill-opacity="0.1" stroke="#00a2ff" stroke-opacity="0.35"/>
+  <text x="427" y="327" font-size="11.5" fill="#00a2ff" text-anchor="middle">🔗 查看链路</text>
   <!-- 输入区 -->
-  <rect x="292" y="618" width="870" height="52" rx="12" fill="#000000" fill-opacity="0.35" stroke="#22d3ee" stroke-opacity="0.4"/>
-  <text x="310" y="649" font-size="13" fill="#6b7484">输入任务，Enter 发送，Shift+Enter 换行…</text>
-  <rect x="1032" y="626" width="118" height="36" rx="9" fill="url(#accent)"/>
-  <text x="1091" y="649" font-size="13" font-weight="700" fill="#0b0e14" text-anchor="middle">发送 ↵</text>
+  <rect x="316" y="676" width="810" height="46" rx="10" fill="#000000" fill-opacity="0.4" stroke="#00a2ff" stroke-opacity="0.4"/>
+  <text x="334" y="704" font-size="12.5" fill="#5a8bb0">输入任务，Enter 发送，Shift+Enter 换行…</text>
+  <rect x="996" y="682" width="118" height="34" rx="8" fill="url(#accent)"/>
+  <text x="1055" y="704" font-size="12.5" font-weight="700" fill="#020a16" text-anchor="middle">发送 ↵</text>
+
+  <!-- 四角角标 -->
+  <g stroke="#00a2ff" stroke-width="2" fill="none">
+    <path d="M50 40 L50 30 M40 50 L30 50" opacity="0"/>
+    <path d="M40 40 h10 v10" />
+    <path d="M1160 40 h-10 v10" />
+    <path d="M40 740 v-10 h10" />
+    <path d="M1160 740 v-10 h-10" />
+  </g>
 </svg>

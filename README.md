@@ -138,6 +138,10 @@ node dist/src/cli/index.js doctor
 
 ![观测台 · 效果评估](docs/screenshot-observatory-eval.svg)
 
+**④ 后台设置**：厂商预设一键填好端点（DeepSeek / OpenAI / Moonshot / Ollama / 自定义），配置 API Key 与模型，支持测试连接与运行时热切换（保存即生效、重启自动应用）：
+
+![后台设置](docs/screenshot-settings.svg)
+
 > 📹 想录真实视频：macOS 用 `Shift + Cmd + 5` 录制（约 2 分钟，操作：`npm run ui` → 提问 → 点「🔗 查看链路」→ 运行评测集），录好后放在 `docs/demo-video.mp4` 并在此替换 `![演示视频](docs/demo-video.mp4)`。
 
 ## 🖥 工作台使用指南
