@@ -58,6 +58,14 @@ const els = {
   obsEvalReport: $('obs-eval-report'),
   sfxToggle: $('sfx-toggle'),
   hudTime: $('hud-time'),
+  // 启动界面
+  bootScreen: $('boot-screen'),
+  bootForm: $('boot-form'),
+  bootName: $('boot-name'),
+  bootRandom: $('boot-random'),
+  bootEnter: $('boot-enter'),
+  bootStatus: $('boot-status'),
+  bootDone: $('boot-done'),
   // 设置页
   settingsPanel: $('settings-panel'),
   navSettings: $('nav-settings'),
@@ -101,6 +109,17 @@ function bindSfxToggle() {
   setInterval(tick, 1000);
 }
 
+const RANDOM_NAMES = ['破晓者', '织梦者', '星轨旅人', '青鸟', '墨渊', '临界', '星尘', '流云', '曦和', '磐石', '拾光', '远山'];
+
+function randomName() {
+  const base = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+  const suffix = String(Math.floor(10 + Math.random() * 90));
+  return `${base}${suffix}`;
+}
+
+const USER_KEY = 'xuanji.user';
+let currentUser = localStorage.getItem(USER_KEY) ?? '';
+
 async function init() {
   try {
     bindEvents();
@@ -110,10 +129,102 @@ async function init() {
     bindSfxToggle();
     await refreshState();
     autoGrow();
+    await runBootSequence();
   } catch (err) {
     console.error('[xuanji] 初始化失败:', err);
     showBanner(`初始化失败: ${err.message}`, true);
   }
+}
+
+/** 启动流程：无昵称先登录（可随机取名），然后播放"系统已激活"序列 */
+async function runBootSequence() {
+  els.bootName.value = currentUser;
+  els.bootRandom.addEventListener('click', () => {
+    const name = randomName();
+    els.bootName.value = name;
+    currentUser = name;
+    window.sfx?.click();
+  });
+  els.bootEnter.addEventListener('click', () => void bootLogin());
+  els.bootName.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') void bootLogin();
+  });
+
+  if (currentUser) {
+    // 已有昵称：直接播放启动序列（不显示输入表单）
+    els.bootForm.classList.add('hidden');
+    await playBootSequence(true);
+  } else {
+    setTimeout(() => els.bootName.focus(), 300);
+  }
+}
+
+async function bootLogin() {
+  const name = els.bootName.value.trim();
+  if (!name) {
+    els.bootName.style.borderColor = 'var(--danger)';
+    setTimeout(() => (els.bootName.style.borderColor = ''), 1200);
+    return;
+  }
+  currentUser = name;
+  localStorage.setItem(USER_KEY, name);
+  window.sfx?.send();
+  els.bootForm.classList.add('hidden');
+  await playBootSequence(true);
+}
+
+/** 逐行播放"正在加载…系统已激活"终端序列 */
+async function playBootSequence() {
+  const lines = [
+    { text: '正在初始化 Agent Loop 核心…', ok: true },
+    { text: '正在加载 MCP 工具模块…', ok: true },
+    { text: '正在注入技能库…', ok: true },
+    { text: '正在校验安全策略…', ok: true },
+    { text: `正在建立会话 — 身份: ${currentUser}`, ok: true },
+  ];
+  els.bootStatus.classList.remove('hidden');
+  els.bootStatus.textContent = '';
+  for (const line of lines) {
+    await new Promise((r) => setTimeout(r, 320));
+    const row = document.createElement('div');
+    row.className = 'boot-status-line visible';
+    const prefix = document.createElement('span');
+    prefix.className = 'prefix';
+    prefix.textContent = '>';
+    const text = document.createElement('span');
+    text.textContent = ` ${line.text}`;
+    const ok = document.createElement('span');
+    ok.className = 'ok';
+    ok.textContent = '✓';
+    row.append(prefix, text, ok);
+    els.bootStatus.appendChild(row);
+    window.sfx?.toolOk();
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  // 系统已激活
+  window.sfx?.done();
+  els.bootDone.textContent = `⚡ 系统已激活 — 欢迎回来，${currentUser}`;
+  els.bootDone.classList.add('visible');
+  await new Promise((r) => setTimeout(r, 900));
+
+  // 淡出启动画面，显示主界面 + 欢迎条
+  els.bootScreen.style.transition = 'opacity 0.5s';
+  els.bootScreen.style.opacity = '0';
+  await new Promise((r) => setTimeout(r, 500));
+  els.bootScreen.remove();
+  showWelcomeBar();
+}
+
+function showWelcomeBar() {
+  const bar = document.createElement('div');
+  bar.className = 'welcome-bar';
+  bar.textContent = `⚡ SYSTEM ONLINE · 欢迎，${currentUser}`;
+  document.body.appendChild(bar);
+  requestAnimationFrame(() => bar.classList.add('show'));
+  setTimeout(() => {
+    bar.classList.remove('show');
+    setTimeout(() => bar.remove(), 700);
+  }, 4000);
 }
 
 async function refreshState() {

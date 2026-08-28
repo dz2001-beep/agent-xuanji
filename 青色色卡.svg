@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+  <rect width="900" height="560" fill="#f5f5f5"/>
+  <text x="450" y="50" font-size="28" font-family="sans-serif" text-anchor="middle" fill="#333">青色色卡</text>
+
+  <!-- 亮青 Cyan #00FFFF -->
+  <rect x="40" y="80" width="200" height="200" fill="#00FFFF"/>
+  <text x="140" y="310" font-size="18" font-family="monospace" text-anchor="middle" fill="#333">亮青 (Cyan)</text>
+  <text x="140" y="332" font-size="16" font-family="monospace" text-anchor="middle" fill="#666">#00FFFF</text>
+
+  <!-- 青 (偏蓝) #00A0B0 -->
+  <rect x="260" y="80" width="200" height="200" fill="#00A0B0"/>
+  <text x="360" y="310" font-size="18" font-family="monospace" text-anchor="middle" fill="#333">青 (蓝绿)</text>
+  <text x="360" y="332" font-size="16" font-family="monospace" text-anchor="middle" fill="#666">#00A0B0</text>
+
+  <!-- 青绿 #00B373 -->
+  <rect x="480" y="80" width="200" height="200" fill="#00B373"/>
+  <text x="580" y="310" font-size="18" font-family="monospace" text-anchor="middle" fill="#333">青绿</text>
+  <text x="580" y="332" font-size="16" font-family="monospace" text-anchor="middle" fill="#666">#00B373</text>
+
+  <!-- 深青 (Teal) #008080 -->
+  <rect x="700" y="80" width="200" height="200" fill="#008080"/>
+  <text x="800" y="310" font-size="18" font-family="monospace" text-anchor="middle" fill="#333">深青 (Teal)</text>
+  <text x="800" y="332" font-size="16" font-family="monospace" text-anchor="middle" fill="#666">#008080</text>
+
+  <!-- 渐变条 -->
+  <text x="450" y="390" font-size="18" font-family="sans-serif" text-anchor="middle" fill="#333">青色调渐变（蓝 → 青 → 绿）</text>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0000FF"/>
+      <stop offset="35%" stop-color="#00FFFF"/>
+      <stop offset="70%" stop-color="#00FF80"/>
+      <stop offset="100%" stop-color="#00FF00"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="420" width="820" height="60" rx="8" fill="url(#grad)"/>
+  <text x="40" y="510" font-size="15" font-family="monospace" fill="#666">#0000FF 蓝</text>
+  <text x="360" y="510" font-size="15" font-family="monospace" text-anchor="middle" fill="#666">#00FFFF 青</text>
+  <text x="860" y="510" font-size="15" font-family="monospace" text-anchor="end" fill="#666">#00FF00 绿</text>
+</svg>

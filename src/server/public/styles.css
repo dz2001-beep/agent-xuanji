@@ -3,19 +3,19 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg0: #020a16;             /* 深蓝黑底 */
-  --bg1: #041326;
-  --panel: rgba(6, 22, 44, 0.42);     /* 半透明系统蓝面板 */
-  --panel-solid: #0a2240;
-  --border: rgba(0, 162, 255, 0.18);
-  --border-strong: rgba(0, 162, 255, 0.32);
-  --text: #e8f4ff;
-  --text-dim: #9cc8e8;
-  --muted: #5a8bb0;
-  --accent: #00a2ff;          /* 系统蓝 */
-  --accent2: #4f8cff;         /* 蓝紫 */
+  --bg0: #02141a;             /* 深青黑底 */
+  --bg1: #042028;
+  --panel: rgba(8, 30, 46, 0.45);     /* 半透明青蓝面板 */
+  --panel-solid: #0a2432;
+  --border: rgba(34, 211, 238, 0.2);
+  --border-strong: rgba(34, 211, 238, 0.34);
+  --text: #e6faff;
+  --text-dim: #9ad8e8;
+  --muted: #5a8fa0;
+  --accent: #22d3ee;          /* 青 */
+  --accent2: #3b82f6;         /* 蓝 */
   --danger: #ff5470;
-  --ok: #00d4b0;
+  --ok: #00e0c6;
   --warn: #ffd166;
   --grad: linear-gradient(120deg, var(--accent), var(--accent2));
   --radius: 10px;
@@ -31,8 +31,8 @@ body {
   font-family: var(--sans);
   color: var(--text);
   background:
-    radial-gradient(1100px 700px at 85% -10%, rgba(0, 162, 255, 0.1), transparent 60%),
-    radial-gradient(900px 600px at -10% 110%, rgba(79, 140, 255, 0.08), transparent 60%),
+    radial-gradient(1100px 700px at 85% -10%, rgba(34, 211, 238, 0.12), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(59, 130, 246, 0.1), transparent 60%),
     var(--bg0);
   background-attachment: fixed;
   overflow: hidden;
@@ -49,7 +49,7 @@ body::after {
     0deg,
     rgba(0, 0, 0, 0) 0px,
     rgba(0, 0, 0, 0) 2px,
-    rgba(0, 162, 255, 0.03) 3px,
+    rgba(34, 211, 238, 0.035) 3px,
     rgba(0, 0, 0, 0) 4px
   );
   mix-blend-mode: overlay;
@@ -62,8 +62,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(0, 162, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 162, 255, 0.045) 1px, transparent 1px);
+    linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
   background-size: 34px 34px;
   z-index: 0;
 }
@@ -81,7 +81,7 @@ body::before {
 
 .sidebar,
 .main {
-  box-shadow: 0 0 30px rgba(0, 162, 255, 0.12), inset 0 0 40px rgba(0, 162, 255, 0.04);
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.14), inset 0 0 40px rgba(34, 211, 238, 0.05);
 }
 
 /* 四角 L 形角标（HUD 框） */
@@ -1134,8 +1134,8 @@ body::before {
   font-family: var(--mono);
   font-size: 10.5px;
   color: var(--muted);
-  background: rgba(0, 162, 255, 0.06);
-  border: 1px solid rgba(0, 162, 255, 0.18);
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.22);
   border-radius: 8px;
   letter-spacing: 0.6px;
 }
@@ -1242,3 +1242,201 @@ select.set-input { cursor: pointer; }
   border-top: 1px dashed var(--border);
   padding-top: 10px;
 }
+
+/* ═══════════════════ 启动 / 登录界面 ═══════════════════ */
+
+.boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(900px 600px at 50% 30%, rgba(34, 211, 238, 0.1), transparent 65%),
+    var(--bg0);
+  overflow: hidden;
+}
+
+.boot-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.04) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+.boot-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg, rgba(0, 0, 0, 0) 0px, rgba(0, 0, 0, 0) 2px, rgba(34, 211, 238, 0.03) 3px, rgba(0, 0, 0, 0) 4px
+  );
+  pointer-events: none;
+}
+
+.boot-card {
+  position: relative;
+  width: min(460px, 90vw);
+  padding: 34px 36px 30px;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(34, 211, 238, 0.12), inset 0 0 60px rgba(34, 211, 238, 0.03);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.boot-card::before,
+.boot-card::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+}
+.boot-card::before { top: -1px; left: -1px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+.boot-card::after { bottom: -1px; right: -1px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+
+.boot-logo {
+  font-family: var(--mono);
+  font-size: 34px;
+  font-weight: 800;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.boot-title {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+.boot-sub {
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 4px 0 22px;
+  font-family: var(--mono);
+  letter-spacing: 0.4px;
+}
+
+/* 输入昵称阶段 */
+.boot-form { display: flex; flex-direction: column; gap: 10px; }
+
+.boot-input-row { display: flex; gap: 8px; }
+
+.boot-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: var(--mono);
+  padding: 10px 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.boot-input:focus { border-color: rgba(34, 211, 238, 0.5); }
+.boot-input::placeholder { color: var(--muted); }
+
+.boot-random {
+  flex-shrink: 0;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  border-radius: 9px;
+  color: var(--accent);
+  font-size: 12.5px;
+  padding: 0 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.boot-random:hover { background: rgba(34, 211, 238, 0.18); box-shadow: 0 0 12px rgba(34, 211, 238, 0.2); }
+
+.boot-enter {
+  background: var(--grad);
+  border: none;
+  border-radius: 9px;
+  color: #02141a;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 11px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: filter 0.15s, transform 0.1s;
+}
+
+.boot-enter:hover { filter: brightness(1.12); }
+.boot-enter:active { transform: translateY(1px); }
+.boot-enter:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 状态序列阶段（终端风） */
+.boot-status {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  min-height: 130px;
+}
+
+.boot-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.boot-status-line.visible { opacity: 1; }
+
+.boot-status-line .prefix { color: var(--accent); }
+.boot-status-line .ok { color: var(--ok); margin-left: auto; }
+.boot-status-line .warn { color: var(--warn); }
+
+.boot-done {
+  margin-top: 12px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.boot-done.visible { opacity: 1; }
+.boot-done strong { color: var(--text); }
+
+/* 主界面顶部欢迎条 */
+.welcome-bar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--accent);
+  background: rgba(8, 30, 46, 0.6);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 999px;
+  padding: 3px 14px;
+  opacity: 0;
+  transition: opacity 0.6s, top 0.6s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.welcome-bar.show { opacity: 1; top: 16px; }

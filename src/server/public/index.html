@@ -8,6 +8,28 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- ══════════════════ 启动 / 登录界面 ══════════════════ -->
+  <div id="boot-screen" class="boot-screen">
+    <div class="boot-card">
+      <div class="boot-logo">&gt;_</div>
+      <div class="boot-title">璇玑 xuanji</div>
+      <div class="boot-sub">AGENT HARNESS · 系统启动</div>
+
+      <!-- 阶段一：输入昵称 -->
+      <div id="boot-form" class="boot-form">
+        <div class="boot-input-row">
+          <input id="boot-name" class="boot-input" type="text" placeholder="输入你的代号…" maxlength="20" spellcheck="false" autofocus />
+          <button id="boot-random" class="boot-random" title="随机取名">🎲 随机</button>
+        </div>
+        <button id="boot-enter" class="boot-enter">▶ 进入系统</button>
+      </div>
+
+      <!-- 阶段二：系统启动序列 -->
+      <div id="boot-status" class="boot-status hidden"></div>
+      <div id="boot-done" class="boot-done"></div>
+    </div>
+  </div>
+
   <div class="app">
     <!-- ══════════════════ 侧边栏 ══════════════════ -->
     <aside class="sidebar">
