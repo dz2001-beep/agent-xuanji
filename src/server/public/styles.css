@@ -3,19 +3,19 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg0: #030806;            /* 近黑绿底 */
-  --bg1: #06120d;
-  --panel: rgba(4, 14, 10, 0.82);
-  --panel-solid: #071210;
-  --border: rgba(0, 255, 156, 0.14);
-  --border-strong: rgba(0, 255, 156, 0.28);
-  --text: #d8ffe9;
-  --text-dim: #8fd8b0;
-  --muted: #4d8a6a;
-  --accent: #00ff9c;         /* 金手指荧光绿 */
-  --accent2: #00d5ff;        /* 辅助青 */
+  --bg0: #020a16;             /* 深蓝黑底 */
+  --bg1: #041326;
+  --panel: rgba(6, 22, 44, 0.42);     /* 半透明系统蓝面板 */
+  --panel-solid: #0a2240;
+  --border: rgba(0, 162, 255, 0.18);
+  --border-strong: rgba(0, 162, 255, 0.32);
+  --text: #e8f4ff;
+  --text-dim: #9cc8e8;
+  --muted: #5a8bb0;
+  --accent: #00a2ff;          /* 系统蓝 */
+  --accent2: #4f8cff;         /* 蓝紫 */
   --danger: #ff5470;
-  --ok: #00ff9c;
+  --ok: #00d4b0;
   --warn: #ffd166;
   --grad: linear-gradient(120deg, var(--accent), var(--accent2));
   --radius: 10px;
@@ -31,8 +31,8 @@ body {
   font-family: var(--sans);
   color: var(--text);
   background:
-    radial-gradient(1100px 700px at 85% -10%, rgba(0, 255, 156, 0.06), transparent 60%),
-    radial-gradient(900px 600px at -10% 110%, rgba(0, 213, 255, 0.05), transparent 60%),
+    radial-gradient(1100px 700px at 85% -10%, rgba(0, 162, 255, 0.1), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(79, 140, 255, 0.08), transparent 60%),
     var(--bg0);
   background-attachment: fixed;
   overflow: hidden;
@@ -49,7 +49,7 @@ body::after {
     0deg,
     rgba(0, 0, 0, 0) 0px,
     rgba(0, 0, 0, 0) 2px,
-    rgba(0, 255, 156, 0.025) 3px,
+    rgba(0, 162, 255, 0.03) 3px,
     rgba(0, 0, 0, 0) 4px
   );
   mix-blend-mode: overlay;
@@ -62,8 +62,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(0, 255, 156, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 156, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(0, 162, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 162, 255, 0.045) 1px, transparent 1px);
   background-size: 34px 34px;
   z-index: 0;
 }
@@ -72,14 +72,16 @@ body::before {
   position: relative;
   z-index: 1;
   display: flex;
-  height: 100vh;
+  width: min(1180px, calc(100vw - 56px));
+  height: calc(100vh - 56px);
+  margin: 28px auto;
   gap: 14px;
   padding: 14px;
 }
 
 .sidebar,
 .main {
-  box-shadow: 0 0 24px rgba(0, 255, 156, 0.08), inset 0 0 40px rgba(0, 255, 156, 0.03);
+  box-shadow: 0 0 30px rgba(0, 162, 255, 0.12), inset 0 0 40px rgba(0, 162, 255, 0.04);
 }
 
 /* 四角 L 形角标（HUD 框） */
@@ -112,7 +114,8 @@ body::before {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   overflow-y: auto;
 }
 
@@ -303,7 +306,8 @@ body::before {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   overflow: hidden;
 }
 
@@ -1130,8 +1134,8 @@ body::before {
   font-family: var(--mono);
   font-size: 10.5px;
   color: var(--muted);
-  background: rgba(0, 255, 156, 0.04);
-  border: 1px solid rgba(0, 255, 156, 0.12);
+  background: rgba(0, 162, 255, 0.06);
+  border: 1px solid rgba(0, 162, 255, 0.18);
   border-radius: 8px;
   letter-spacing: 0.6px;
 }
