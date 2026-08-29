@@ -76,6 +76,7 @@
         <div class="kv">
           <div class="kv-row"><span class="kv-k">provider</span><span id="kv-provider" class="kv-v">–</span></div>
           <div class="kv-row"><span class="kv-k">model</span><select id="kv-model" class="kv-select" title="切换模型"></select></div>
+          <div class="kv-row"><span class="kv-k">token</span><span id="kv-tokens" class="kv-v">0</span></div>
         </div>
       </section>
 
@@ -96,6 +97,7 @@
       </section>
 
       <div class="sidebar-footer">
+        <button id="export-btn" class="btn btn-ghost btn-block">📤 导出会话</button>
         <button id="clear-btn" class="btn btn-ghost btn-block">🗑 清空会话</button>
         <button id="sfx-toggle" class="sfx-toggle on" title="金手指音效开关">🔊 音效：开</button>
         <div class="version">xuanji v0.1.0 · MIT</div>
@@ -194,6 +196,10 @@
         <div class="set-row">
           <label class="set-label">模型列表</label>
           <input id="set-models" class="set-input" type="text" placeholder="deepseek-chat, deepseek-reasoner（逗号分隔，供下拉切换）" spellcheck="false" />
+        </div>
+        <div class="set-row set-row-top">
+          <label class="set-label">System Prompt</label>
+          <textarea id="set-system" class="set-input set-textarea" rows="4" placeholder="（可选）自定义 agent 人格/角色提示词，如：你是一名资深的前端工程师……" spellcheck="false"></textarea>
         </div>
         <div class="set-row set-actions">
           <span id="set-current" class="set-current"></span>

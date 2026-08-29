@@ -70,6 +70,8 @@ export interface AppSettings {
   model: string;
   /** Extra models offered in the UI model picker. */
   models?: string[];
+  /** Custom system prompt (agent persona). */
+  system?: string;
 }
 
 function settingsFile(): string {

@@ -1506,3 +1506,22 @@ select.set-input { cursor: pointer; }
 }
 
 .ws-new .input { min-width: 0; }
+
+/* ═══════════════════ 小功能样式 ═══════════════════ */
+
+.msg-time {
+  align-self: flex-end;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  padding-bottom: 2px;
+}
+
+.set-row-top { align-items: flex-start; }
+
+.set-textarea {
+  resize: vertical;
+  min-height: 76px;
+  font-family: var(--sans);
+  line-height: 1.6;
+}

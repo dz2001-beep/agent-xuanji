@@ -223,6 +223,41 @@ export class ChatSession {
     await this.persist();
   }
 
+  /** Export the ACTIVE workspace conversation as markdown. */
+  exportMarkdown(): string {
+    const ws = this.activeWorkspace();
+    const lines: string[] = [];
+    lines.push(`# 璇玑会话导出 — ${ws?.name ?? '工作区'}`);
+    lines.push('');
+    lines.push(`- 工作区: ${ws?.name ?? '-'}`);
+    lines.push(`- 目录: ${ws?.path ?? this.cwd}`);
+    lines.push(`- 导出时间: ${new Date().toISOString()}`);
+    lines.push('');
+    let toolCalls = 0;
+    for (const m of this.history) {
+      if (m.role === 'user') {
+        lines.push(`## 🙋 用户`);
+      } else if (m.role === 'assistant') {
+        lines.push(`## 🤖 助手`);
+      } else {
+        toolCalls++;
+        continue;
+      }
+      lines.push('');
+      lines.push(m.content ?? '（工具调用）');
+      lines.push('');
+      if (m.toolCalls?.length) {
+        for (const tc of m.toolCalls) {
+          lines.push(`> 🔧 \`${tc.name}\` ${JSON.stringify(tc.arguments)}`);
+        }
+        lines.push('');
+      }
+    }
+    lines.push(`---`);
+    lines.push(`统计：${this.history.filter((m) => m.role === 'user').length} 轮对话 · ${toolCalls} 次工具调用`);
+    return lines.join('\n');
+  }
+
   /** Cancel the in-flight run. */
   abort(): void {
     this.abortController?.abort();

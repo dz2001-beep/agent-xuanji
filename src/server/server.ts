@@ -112,6 +112,13 @@ export class UiServer {
       return this.handleEvalRun(req, res);
     }
 
+    // 会话导出（markdown）
+    if (method === 'GET' && url.pathname === '/api/export') {
+      const md = this.session.exportMarkdown();
+      const name = `xuanji-session-${new Date().toISOString().slice(0, 10)}.md`;
+      return sendJson(res, 200, { name, content: md });
+    }
+
     // 后台设置：查询（脱敏）/ 保存（热切换）/ 测试连接
     if (method === 'GET' && url.pathname === '/api/settings') {
       const { loadSettings, VENDOR_PRESETS, maskKey, guessVendor } = await import('../settings.js');
@@ -126,6 +133,7 @@ export class UiServer {
           keySet: !!(current.type !== 'mock' && (saved?.apiKey || process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY)),
           keyMasked: saved?.apiKey ? maskKey(saved.apiKey) : '',
           mock: current.type === 'mock',
+          system: this.harness.config.system ?? '',
         },
       });
     }
@@ -285,11 +293,15 @@ export class UiServer {
     const model = String(body.model ?? '').trim();
     const baseURL = String(body.baseURL ?? '').trim() || undefined;
     const apiKey = String(body.apiKey ?? '').trim() || undefined;
+    const system = String(body.system ?? '').trim();
     if (!model) return sendJson(res, 400, { error: 'model 不能为空' });
 
     const preset = findVendor(vendor);
     const effectiveBaseURL = baseURL ?? preset?.baseURL ?? '';
-    const settings = { vendor, baseURL: effectiveBaseURL, apiKey, model };
+    const settings = { vendor, baseURL: effectiveBaseURL, apiKey, model, ...(system ? { system } : {}) };
+
+    // 自定义 system prompt 立即生效
+    if (system) this.harness.config.system = system;
 
     try {
       // Hot-swap: mock（无 baseURL 且无 key 时兜底 mock）→ 真实 provider

@@ -28,6 +28,9 @@ const els = {
   wsClose: $('ws-close'),
   kvProvider: $('kv-provider'),
   kvModel: $('kv-model'),
+  kvTokens: $('kv-tokens'),
+  exportBtn: $('export-btn'),
+  setSystem: $('set-system'),
   toolsList: $('tools-list'),
   toolsCount: $('tools-count'),
   skillsList: $('skills-list'),
@@ -361,6 +364,7 @@ function bindEvents() {
     void saveCity(savedCity, true);
   }
   els.citySave.addEventListener('click', () => void saveCity(els.cityInput.value.trim(), false));
+  els.exportBtn.addEventListener('click', () => void exportSession());
   els.cityInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') void saveCity(els.cityInput.value.trim(), false);
   });
@@ -374,6 +378,14 @@ function autoGrow() {
 /* ───────────────────────── 对话 ───────────────────────── */
 
 let currentAssistant = null; // { body, cardsEl, contentEl }
+let sessionTokens = 0;
+const COST_PER_1K = 0.002; // 粗略估算：美元 / 1k tokens（演示用）
+
+function addTokens(n) {
+  sessionTokens += n;
+  const cost = ((sessionTokens / 1000) * COST_PER_1K).toFixed(4);
+  els.kvTokens.textContent = `${sessionTokens.toLocaleString()} (~$${cost})`;
+}
 
 function setRunning(running) {
   state.running = running;
@@ -382,9 +394,16 @@ function setRunning(running) {
   els.input.disabled = running;
 }
 
+let lastPrompt = '';
+
 async function send() {
   const text = els.input.value.trim();
   if (!text || state.running) return;
+  await sendWithText(text);
+}
+
+async function sendWithText(text) {
+  lastPrompt = text;
   window.sfx?.send();
 
   els.input.value = '';
@@ -518,16 +537,31 @@ function finishTurn(frame, errorMsg) {
     currentAssistant.contentEl.classList.remove('streaming');
     const meta = document.createElement('div');
     meta.className = 'run-meta';
+    const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
     if (errorMsg) {
-      meta.textContent = `⚠ ${errorMsg}`;
+      meta.textContent = `[${time}] ⚠ ${errorMsg}`;
     } else if (frame.error) {
-      // run-level failure: show status AND the concrete reason (e.g. 402/401)
-      meta.textContent = `⚠ ${frame.status} · ${frame.iterations} 轮 · ${frame.toolCalls} 次工具调用 · ${frame.error}`;
+      meta.textContent = `[${time}] ⚠ ${frame.status} · ${frame.iterations} 轮 · ${frame.toolCalls} 次工具调用 · ${frame.error}`;
       meta.style.color = 'var(--danger)';
     } else {
-      meta.textContent = `· ${frame.status} · ${frame.iterations} 轮 · ${frame.toolCalls} 次工具调用 · ${frame.tokens} tokens`;
+      meta.textContent = `[${time}] · ${frame.status} · ${frame.iterations} 轮 · ${frame.toolCalls} 次工具调用 · ${frame.tokens} tokens`;
+      addTokens(frame.tokens ?? 0);
     }
     currentAssistant.body.appendChild(meta);
+
+    // 复制回答
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn btn-ghost btn-sm trace-link';
+    copyBtn.textContent = '📋 复制';
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(currentAssistant.contentEl.textContent);
+        showBanner('已复制回答');
+      } catch {
+        showBanner('复制失败（浏览器权限）', true);
+      }
+    });
+    currentAssistant.body.appendChild(copyBtn);
 
     // 链路入口：查看本次运行的完整事件链
     if (frame.runId) {
@@ -540,6 +574,18 @@ function finishTurn(frame, errorMsg) {
         void openRunInObservatory(frame.runId);
       });
       currentAssistant.body.appendChild(link);
+    }
+
+    // 失败时提供一键重试
+    if (errorMsg || frame.error) {
+      const retry = document.createElement('button');
+      retry.className = 'btn btn-ghost btn-sm trace-link';
+      retry.textContent = '↻ 重试';
+      retry.addEventListener('click', () => {
+        currentAssistant = null;
+        if (lastPrompt) void sendWithText(lastPrompt);
+      });
+      currentAssistant.body.appendChild(retry);
     }
 
     currentAssistant = null;
@@ -749,6 +795,7 @@ function renderVendors(vendors, current) {
 
   els.setBaseurl.value = current?.baseURL ?? '';
   els.setModel.value = current?.model ?? '';
+  els.setSystem.value = current?.system ?? '';
   els.setApikey.value = '';
   const cur = current;
   els.setCurrent.textContent = cur
@@ -773,6 +820,7 @@ function collectSettings() {
     baseURL: els.setBaseurl.value.trim(),
     model: els.setModel.value.trim(),
     models: els.setModels.value.split(/[,，]/).map((s) => s.trim()).filter(Boolean),
+    system: els.setSystem.value.trim(),
   };
 }
 
@@ -963,6 +1011,10 @@ function appendUserMsg(text) {
   bubble.className = 'bubble';
   bubble.textContent = text;
   row.append(avatar, bubble);
+  const time = document.createElement('div');
+  time.className = 'msg-time';
+  time.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  row.appendChild(time);
   els.messages.appendChild(row);
   scrollToBottom();
 }
@@ -1295,6 +1347,21 @@ function resetChatView() {
 async function abortRun() {
   await fetchJson('/api/abort', {});
   showBanner('已发送停止信号…');
+}
+
+async function exportSession() {
+  try {
+    const { name, content } = await fetchJson('/api/export');
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showBanner('📤 会话已导出为 Markdown');
+  } catch (err) {
+    showBanner(`导出失败: ${err.message}`, true);
+  }
 }
 
 async function clearSession() {
