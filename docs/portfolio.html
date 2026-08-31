@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>璇玑 xuanji — 个人作品介绍</title>
+<style>
+  @page { size: A4; margin: 13mm 14mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #0c2a35;
+    background: #fff;
+    font-size: 12.5px;
+    line-height: 1.7;
+  }
+  .mono { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace; }
+  .accent { color: #0891b2; }
+
+  /* 封面 */
+  .cover {
+    background: linear-gradient(135deg, #02141a 0%, #083344 60%, #0e4a5e 100%);
+    color: #e6faff;
+    border-radius: 14px;
+    padding: 30px 30px 26px;
+    margin-bottom: 18px;
+  }
+  .cover-logo { font-size: 40px; font-weight: 800; font-family: "JetBrains Mono", Menlo, monospace; background: linear-gradient(90deg, #22d3ee, #3b82f6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .cover-title { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .cover-sub { font-size: 12px; color: #7dd3fc; margin-top: 3px; }
+  .cover-links { margin-top: 14px; font-size: 12px; color: #a5e8f5; }
+  .cover-links a { color: #22d3ee; text-decoration: none; }
+
+  h2 {
+    font-size: 15px;
+    color: #0c4a5e;
+    border-left: 4px solid #22d3ee;
+    padding-left: 9px;
+    margin: 20px 0 10px;
+  }
+
+  /* 简介 */
+  .intro { background: #f0fbfe; border: 1px solid #c9ecf5; border-radius: 10px; padding: 12px 14px; }
+
+  /* 亮点卡片 */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .card {
+    border: 1px solid #c9ecf5; border-radius: 10px; padding: 10px 12px;
+    background: #f8fdff;
+  }
+  .card h3 { font-size: 13px; color: #0891b2; margin-bottom: 4px; }
+  .card p { font-size: 11.5px; color: #375a66; }
+  .card b { color: #0c4a5e; }
+
+  /* 截图 */
+  .shots { display: flex; flex-direction: column; gap: 12px; }
+  .shot { border: 1px solid #d8eef5; border-radius: 10px; padding: 8px; }
+  .shot .cap { font-size: 11.5px; color: #375a66; padding: 6px 4px 2px; }
+  .shot img { width: 100%; border-radius: 7px; }
+
+  /* 数据条 */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+  .stat { text-align: center; background: #02141a; color: #e6faff; border-radius: 10px; padding: 10px 6px; }
+  .stat .n { font-size: 19px; font-weight: 800; font-family: "JetBrains Mono", Menlo, monospace; color: #22d3ee; }
+  .stat .l { font-size: 10.5px; color: #9ad8e8; margin-top: 2px; }
+
+  .footer { margin-top: 18px; text-align: center; font-size: 10.5px; color: #7d98a2; border-top: 1px solid #d8eef5; padding-top: 10px; }
+  ul { padding-left: 18px; }
+  li { margin-bottom: 3px; }
+</style>
+</head>
+<body>
+
+  <!-- 封面 -->
+  <div class="cover">
+    <div class="cover-logo">&gt;_</div>
+    <div class="cover-title">璇玑（xuanji）</div>
+    <div class="cover-sub">Agent Harness — 可测 · 可控 · 可管的 agent 个人助手产品</div>
+    <div class="cover-links">
+      作品地址：<a href="https://github.com/dz2001-beep/agent-xuanji">https://github.com/dz2001-beep/agent-xuanji</a><br />
+      技术栈：TypeScript / Node.js · 官方 MCP SDK · OpenAI 兼容协议 · node:http + SSE · vitest
+    </div>
+  </div>
+
+  <h2>📌 作品简介</h2>
+  <div class="intro">
+    璇玑（xuanji）是一个从零实现的 TypeScript Agent Harness —— 可测、可控、可管的 agent harness 个人助手产品。
+    提供 <b>Agent Loop / MCP / Skill</b> 三大能力与 Codex 式 Web 工作台（SSE 流式对话、多工作区隔离、工具可视化、模型切换、审批弹窗、全链路观测、效果评估、多厂商后台设置），并内置免 Key 的联网搜索。
+  </div>
+
+  <h2>✨ 核心亮点</h2>
+  <div class="cards">
+    <div class="card"><h3>1. 轨迹记录与离线重放</h3><p>完整事件流记录为 JSONL 轨迹；离线回放校验事件顺序、复算工具序列与 token；黄金轨迹比对发现行为变化 —— <b>agent 行为可回归验证</b>。</p></div>
+    <div class="card"><h3>2. Token 预算驱动的上下文压缩</h3><p>超预算分层压缩（截断工具结果 → 折叠旧轮次为摘要）；不依赖 LLM、可离线测试；<b>实测长会话 token 由 29,990 压缩至 1,240（约 96%）</b>。</p></div>
+    <div class="card"><h3>3. 参数级最小权限策略 + 人工审批</h3><p>声明式规则按“工具名 + 参数”判断放行/拒绝/询问；危险命令直接拒绝，高风险操作需人工确认，<b>无确认通道默认拒绝（fail-closed）</b>。</p></div>
+    <div class="card"><h3>4. 技能学习</h3><p>成功运行的轨迹自动转成可复用的 SKILL.md 技能；多条同类轨迹按使用频率加权 —— <b>下次同类任务可直接复用</b>。</p></div>
+    <div class="card"><h3>5. 效果评估</h3><p>场景化评测集 + 自动化评测流水线，产出通过率 / token / 工具效率指标报告，支持版本回归，<b>指标关联轨迹可溯源</b>。</p></div>
+    <div class="card"><h3>6. 全链路观测</h3><p>独立观测台：历史运行列表 + 逐轮时间线（模型输出、工具参数/耗时/结果、token、压缩事件），<b>问题可定位到具体一步</b>。</p></div>
+  </div>
+
+  <h2>🖥 页面展示</h2>
+  <div class="shots">
+    <div class="shot">
+      <img src="screenshot-chat.svg" alt="对话页" />
+      <div class="cap">① 对话 —— 提问后 agent 流式回答、依次调用工具（卡片可展开看参数与耗时）</div>
+    </div>
+    <div class="shot">
+      <img src="screenshot-observatory-trace.svg" alt="观测台链路" />
+      <div class="cap">② 全链路观测 —— 运行列表 + 逐轮时间线（模型输出 / 工具调用 / token）</div>
+    </div>
+    <div class="shot">
+      <img src="screenshot-observatory-eval.svg" alt="观测台评测" />
+      <div class="cap">③ 效果评估 —— 一键运行评测集，通过率 / token / 工具效率报告</div>
+    </div>
+    <div class="shot">
+      <img src="screenshot-settings.svg" alt="设置页" />
+      <div class="cap">④ 后台设置 —— 多厂商预设（DeepSeek / OpenAI / Moonshot / Ollama / 自定义），API Key 与模型配置</div>
+    </div>
+  </div>
+
+  <h2>📊 工程数据</h2>
+  <div class="stats">
+    <div class="stat"><div class="n">150</div><div class="l">离线测试全绿</div></div>
+    <div class="stat"><div class="n">96%</div><div class="l">长会话 token ↓</div></div>
+    <div class="stat"><div class="n">12+</div><div class="l">CLI 命令</div></div>
+    <div class="stat"><div class="n">5</div><div class="l">厂商兼容</div></div>
+  </div>
+
+  <div class="footer">璇玑（xuanji）· Agent Harness 个人作品 · 由 18+ 次迭代构建 · 全部自研</div>
+
+</body>
+</html>
