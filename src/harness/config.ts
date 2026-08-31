@@ -45,6 +45,8 @@ export interface HarnessConfig {
   budget?: BudgetConfig;
   /** Least-privilege policy rules (allow/deny/ask per tool call + args). */
   policy?: PolicyConfig;
+  /** Sandbox enforcement for fs/shell tools (path jail + command guard). */
+  sandbox?: import('../sandbox.js').SandboxConfig;
   /**
    * Models offered in the web UI's model picker. Defaults to
    * [deepseek-chat, deepseek-reasoner] with the configured model guaranteed

@@ -90,6 +90,8 @@ export interface RunOptions {
   sessionId?: string;
   /** Session working directory — passed to tools so relative paths resolve against it. */
   cwd?: string;
+  /** Sandbox enforcement for fs/shell tools (path jail + command guard). */
+  sandbox?: import('../sandbox.js').SandboxConfig;
 }
 
 const DEFAULTS = {
@@ -282,6 +284,7 @@ export class Agent {
           sessionId: runOpts.sessionId,
           signal: runOpts.signal,
           cwd: runOpts.cwd,
+          sandbox: runOpts.sandbox,
         }),
         this.opts.toolTimeoutMs!,
         `tool "${call.name}"`,

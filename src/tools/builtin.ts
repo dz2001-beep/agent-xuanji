@@ -12,6 +12,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { Tool, ToolContext, ToolResult, toolError, toolResult } from './tool.js';
+import { checkCommandAllowed, resolveAllowedPath } from '../sandbox.js';
 
 export type BuiltinGroup = 'fs' | 'shell' | 'web';
 
@@ -23,11 +24,15 @@ export function isBuiltinGroup(v: string): v is BuiltinGroup {
 
 const MAX_OUTPUT = 20_000;
 
-/** Resolve a tool-given path against the session cwd when it is relative. */
+/** Resolve a tool-given path; sandbox-enforced when enabled. */
 function resolvePath(p: string, ctx: ToolContext): string {
+  if (ctx.sandbox?.enabled) {
+    return resolveAllowedPath(p, ctx.cwd ?? process.cwd(), ctx.sandbox);
+  }
   if (path.isAbsolute(p)) return p;
   return ctx.cwd ? path.resolve(ctx.cwd, p) : path.resolve(p);
 }
+
 
 /* ------------------------------------------------------------------ */
 /* fs tools                                                            */
@@ -113,6 +118,16 @@ interface ShellInput {
 
 function runShell(input: ShellInput, ctx: ToolContext): Promise<ToolResult> {
   return new Promise<ToolResult>((resolve) => {
+    // 沙箱：命令拦截 + cwd 边界
+    if (ctx.sandbox?.enabled) {
+      try {
+        checkCommandAllowed(input.command, ctx.sandbox);
+        if (input.cwd) resolveAllowedPath(input.cwd, ctx.cwd ?? process.cwd(), ctx.sandbox);
+      } catch (err) {
+        resolve(toolError((err as Error).message));
+        return;
+      }
+    }
     const timeoutMs = Math.min(input.timeoutMs ?? 30_000, 60_000);
     let stdout = '';
     let stderr = '';

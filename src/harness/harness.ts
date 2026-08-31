@@ -141,7 +141,11 @@ export class Harness {
       }
     }
 
-    return agent.run(input, { ...opts, system });
+    return agent.run(input, {
+      ...opts,
+      system,
+      ...(this.config.sandbox?.enabled ? { sandbox: this.config.sandbox } : {}),
+    });
   }
 
   /**

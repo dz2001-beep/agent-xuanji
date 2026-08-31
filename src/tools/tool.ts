@@ -27,6 +27,8 @@ export interface ToolContext {
    * them against this (the chat client sets it to the user's chosen dir).
    */
   cwd?: string;
+  /** Optional sandbox config; when enabled, fs/shell enforce path & command guards. */
+  sandbox?: import('../sandbox.js').SandboxConfig;
 }
 
 export type ToolResult = { ok: true; data: unknown } | { ok: false; error: string };
