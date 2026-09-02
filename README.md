@@ -288,7 +288,7 @@ npm run build         # tsc 构建 + 静态资源复制
 
 [📄 作品介绍 PDF（简历/作品集用）](docs/璇玑xuanji-作品介绍.pdf) · [作品页 HTML 源文件](docs/portfolio.html)
 
-设计取舍的完整讨论（为什么用官方 MCP SDK、为什么零依赖做 schema 校验与技能匹配、如何规避 API 工具名约束、与生产 harness 的差距与扩展点）见 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**；三大可靠性优化的技术实现与测试详解见 **[docs/OPTIMIZATIONS.md](docs/OPTIMIZATIONS.md)**。
+设计取舍的完整讨论（为什么用官方 MCP SDK、为什么零依赖做 schema 校验与技能匹配、如何规避 API 工具名约束、与生产 harness 的差距与扩展点）见 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**；三大可靠性优化的技术实现与测试详解见 **[docs/OPTIMIZATIONS.md](docs/OPTIMIZATIONS.md)**；沙箱安全方案见 **[docs/SECURITY.md](docs/SECURITY.md)**；Claude Code 源码解读与架构对照见 **[docs/claude-code-analysis.md](docs/claude-code-analysis.md)**。
 
 ---
 
