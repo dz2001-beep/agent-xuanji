@@ -13,6 +13,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { Tool, ToolContext, ToolResult, toolError, toolResult } from './tool.js';
 import { checkCommandAllowed, resolveAllowedPath } from '../sandbox.js';
+import { hasDocker, runInDocker } from '../sandbox_docker.js';
 
 export type BuiltinGroup = 'fs' | 'shell' | 'web';
 
@@ -117,6 +118,10 @@ interface ShellInput {
 }
 
 function runShell(input: ShellInput, ctx: ToolContext): Promise<ToolResult> {
+  // Docker 引擎：整个命令在一次性容器内执行（容器级隔离）
+  if (ctx.sandbox?.enabled && ctx.sandbox.engine === 'docker') {
+    return dockerShell(input, ctx);
+  }
   return new Promise<ToolResult>((resolve) => {
     // 沙箱：命令拦截 + cwd 边界
     if (ctx.sandbox?.enabled) {
@@ -192,6 +197,34 @@ const shellTool: Tool = {
   },
   execute: (input, ctx) => runShell(input as ShellInput, ctx),
 };
+
+async function dockerShell(input: ShellInput, ctx: ToolContext): Promise<ToolResult> {
+  const sandbox = ctx.sandbox!;
+  // 纵深：即使容器隔离，也先过命令模式与路径校验
+  try {
+    checkCommandAllowed(input.command, sandbox);
+  } catch (err) {
+    return toolError((err as Error).message);
+  }
+  if (!(await hasDocker())) {
+    return toolError('沙箱 engine=docker 但 Docker daemon 不可用 —— 请先启动 Docker Desktop/colima（fail-closed，拒绝执行）');
+  }
+  const workspace = ctx.cwd ?? process.cwd();
+  const res = await runInDocker(input.command, {
+    workspace,
+    image: sandbox.docker?.image,
+    memory: sandbox.docker?.memory,
+    cpus: sandbox.docker?.cpus,
+    network: sandbox.docker?.network,
+    readOnly: sandbox.docker?.readOnly,
+    timeoutMs: input.timeoutMs,
+  });
+  if (res.timedOut) return toolError(`shell.run 超时（容器已 kill）: ${input.timeoutMs ?? 30000}ms`);
+  if (res.stderr.toLowerCase().includes('unable to find image')) {
+    return toolError(`Docker 镜像不存在: ${sandbox.docker?.image ?? 'node:22-bookworm-slim'} —— 请先拉取镜像或配置 sandbox.docker.image`);
+  }
+  return toolResult({ exitCode: res.exitCode, stdout: res.stdout, stderr: res.stderr, engine: 'docker' });
+}
 
 /* ------------------------------------------------------------------ */
 /* web tools                                                           */

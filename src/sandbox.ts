@@ -25,6 +25,31 @@ export interface SandboxConfig {
   allowExternal?: boolean;
   /** Extra dangerous-command regex patterns (merged with defaults). */
   denyCommandPatterns?: RegExp[];
+  /**
+   * Execution engine for shell.run:
+   *  - 'userland' (default): in-process guards (path resolve + regex);
+   *  - 'docker': every shell command runs inside a throwaway container
+   *    (namespace + cgroup isolation, workspace bind-mounted).
+   */
+  engine?: SandboxEngine;
+  docker?: SandboxDockerOptions;
+}
+
+/** Execution engine for shell commands. */
+export type SandboxEngine = 'userland' | 'docker';
+
+/** Docker engine options (engine: 'docker'). */
+export interface SandboxDockerOptions {
+  /** Image to run commands in (should include node/git etc.). Default: node:22-bookworm-slim */
+  image?: string;
+  /** Memory limit, e.g. '1g'. */
+  memory?: string;
+  /** CPU limit, e.g. '1'. */
+  cpus?: string;
+  /** Allow outbound network from the shell (default false). */
+  network?: boolean;
+  /** Read-only container rootfs (workspace stays writable). Default true. */
+  readOnly?: boolean;
 }
 
 /** Thrown when a sandbox rule is violated (tools surface it as a tool error). */

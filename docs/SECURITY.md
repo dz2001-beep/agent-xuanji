@@ -116,7 +116,18 @@ shell.run("npm test")         → ✅ 正常执行
 - **绕过面**：shell 内的复杂注入（如 `python -c`）可绕过正则 —— 因此必须与 ①策略审批 ③超时 ④审计 配合
 - **生产建议**：在 Docker / VM / 无网容器中运行 agent 进程，叠加本沙箱作为纵深防御
 
-## 7. 测试
+## 7. 引擎与升级路径
+
+沙箱支持三档引擎（`SandboxConfig.engine`）：
+
+| engine | 实现 | 隔离强度 | 文档 |
+|---|---|---|---|
+| `userland`（默认） | 路径归一化校验 + 危险命令正则 | 低（应用层） | 本文档 |
+| `docker` | 一次性加固容器（namespace/cgroup/断网/去能力/限额/只读） | 高（容器级，多用户天然隔离） | [DOCKER_SANDBOX.md](DOCKER_SANDBOX.md) |
+
+macOS 的 seatbelt（`sandbox-exec`）为预留项，可按需接入。
+
+## 8. 测试
 
 `test/sandbox.test.ts`（11 个用例）：
 - `isPathWithin` 边界（根/后代/兄弟/祖先）
